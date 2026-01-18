@@ -182,6 +182,7 @@ const WORD_POWERUPS = {
 const SCREENS = {
   WELCOME: 'welcome',
   ADVENTURE_SELECT: 'adventure_select',
+  TOPIC_MODE: 'topic_mode',
   QUEST_MAP: 'quest_map',
   QUEST_ACTIVE: 'quest_active',
   STORY_FORGE: 'story_forge',
@@ -210,6 +211,7 @@ const DrawingCanvas = ({ onSave, initialImage, width = 320, height = 280 }) => {
   const [tool, setTool] = useState('brush'); // 'brush' or 'eraser'
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isExpanded, setIsExpanded] = useState(false); // Popup mode
 
   const colors = [
     '#FF6B6B', // Red
@@ -407,21 +409,212 @@ const DrawingCanvas = ({ onSave, initialImage, width = 320, height = 280 }) => {
             🗑️
           </button>
         </div>
+
+        {/* Expand button - Only show on larger screens (PC mode) */}
+        <div className="tool-group expand-controls" style={{ display: 'none' }}>
+          <style>{`
+            @media (min-width: 768px) {
+              .expand-controls { display: flex !important; }
+            }
+          `}</style>
+          <button
+            className="tool-btn"
+            onClick={() => setIsExpanded(true)}
+            title="Open in Popup"
+            style={{ padding: '8px 12px' }}
+          >
+            🔍 Expand
+          </button>
+        </div>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="drawing-canvas"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-      />
+      {/* Expanded Popup Mode */}
+      {isExpanded && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.9)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#f8f9fa',
+            borderRadius: '20px',
+            padding: '25px',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            overflow: 'auto'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ color: '#1a1a3a', margin: 0, fontSize: '24px' }}>✨ Drawing Canvas (Expanded)</h3>
+              <button
+                onClick={() => setIsExpanded(false)}
+                style={{
+                  background: '#FF6B6B',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '16px'
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Popup Toolbar */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '15px',
+              marginBottom: '20px',
+              padding: '15px',
+              background: 'white',
+              borderRadius: '15px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+            }}>
+              {/* Colors */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', color: '#666', marginRight: '5px' }}>Color:</span>
+                {colors.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { setColor(c); setTool('brush'); }}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      border: color === c ? '3px solid #1a1a3a' : '2px solid #ddd',
+                      background: c,
+                      cursor: 'pointer',
+                      transform: color === c ? 'scale(1.15)' : 'scale(1)'
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Brush Sizes */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', color: '#666', marginRight: '5px' }}>Size:</span>
+                {brushSizes.map(bs => (
+                  <button
+                    key={bs.size}
+                    onClick={() => setBrushSize(bs.size)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      border: brushSize === bs.size ? '2px solid #4ECDC4' : '2px solid #ddd',
+                      background: brushSize === bs.size ? '#4ECDC4' : 'white',
+                      color: brushSize === bs.size ? 'white' : '#333',
+                      cursor: 'pointer',
+                      fontWeight: '700'
+                    }}
+                  >
+                    {bs.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tools */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', color: '#666', marginRight: '5px' }}>Tools:</span>
+                <button
+                  onClick={() => setTool('eraser')}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: tool === 'eraser' ? '2px solid #FF6B6B' : '2px solid #ddd',
+                    background: tool === 'eraser' ? '#FF6B6B' : 'white',
+                    cursor: 'pointer',
+                    fontSize: '18px'
+                  }}
+                >
+                  🧹
+                </button>
+                <button
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '2px solid #ddd',
+                    background: 'white',
+                    cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer',
+                    opacity: historyIndex <= 0 ? 0.5 : 1,
+                    fontSize: '18px'
+                  }}
+                >
+                  ↩️
+                </button>
+                <button
+                  onClick={handleClear}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '2px solid #ddd',
+                    background: 'white',
+                    cursor: 'pointer',
+                    fontSize: '18px'
+                  }}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+
+            {/* Canvas */}
+            <canvas
+              ref={canvasRef}
+              width={width}
+              height={height}
+              className="drawing-canvas"
+              style={{
+                width: '700px',
+                height: 'auto',
+                maxWidth: '100%',
+                borderRadius: '15px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+              }}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+              onTouchStart={startDrawing}
+              onTouchMove={draw}
+              onTouchEnd={stopDrawing}
+            />
+
+            <p style={{ textAlign: 'center', color: '#666', marginTop: '15px' }}>
+              ✨ Draw your masterpiece!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Normal Canvas (when not expanded) */}
+      {!isExpanded && (
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          className="drawing-canvas"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+      )}
 
       <p className="drawing-hint">✨ Draw your {tool === 'eraser' ? 'erasing' : 'creation'}!</p>
     </div>
@@ -582,10 +775,8 @@ const WelcomeScreen = ({ onStart }) => (
 );
 
 // Adventure Select Screen
-const AdventureSelectScreen = ({ onSelect, onHome }) => (
+const AdventureSelectScreen = ({ onSelect, onHome, onTopicMode }) => (
   <div className="screen adventure-screen">
-    <button className="btn-home" onClick={onHome}>🏠 Home</button>
-
     <StoryGuide mood="mysterious" message="Choose your path, adventurer..." />
 
     <h2 className="screen-title">Pick Your Adventure!</h2>
@@ -627,6 +818,19 @@ const AdventureSelectScreen = ({ onSelect, onHome }) => (
           <li>⭐⭐⭐ Legend status</li>
         </ul>
       </button>
+
+      <button className="adventure-card topic-mode" onClick={onTopicMode}>
+        <div className="card-glow"></div>
+        <div className="popular-tag" style={{ background: 'linear-gradient(135deg, #4ECDC4, #44A08D)' }}>🆕 New!</div>
+        <span className="card-icon">📚</span>
+        <h3>Topic Explorer</h3>
+        <p>Learn about real-world topics!</p>
+        <ul>
+          <li>🏛️ Taj Mahal, London...</li>
+          <li>📖 Read & Learn</li>
+          <li>✅ Quiz Yourself</li>
+        </ul>
+      </button>
     </div>
   </div>
 );
@@ -657,7 +861,7 @@ const QuestMapScreen = ({
   return (
     <div className="screen quest-map-screen">
       <div className="map-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
+        <button className="btn-home" onClick={onHome}>🏠</button>
         <h2 className="screen-title">🗺️ Quest Map</h2>
         {modeBadge && (
           <div className="mode-badge" style={{
@@ -910,7 +1114,7 @@ const QuestActiveScreen = ({
       <CelebrationPopup message={celebrationMsg} show={showCelebration} />
 
       <div className="quest-top-bar">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
+        <button className="btn-home" onClick={onHome}>🏠</button>
         <button className="btn-back" onClick={onBack}>← Map</button>
         <span className="quest-progress">Quest {questIndex + 1} of {QUESTS.length}</span>
       </div>
@@ -1233,7 +1437,7 @@ const StoryForgeScreen = ({
   return (
     <div className="screen forge-screen">
       <div className="forge-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
+        <button className="btn-home" onClick={onHome}>🏠</button>
         <button className="btn-back" onClick={onBack}>← Map</button>
         <h2 className="screen-title">⚒️ Story Forge</h2>
         <button className={`btn-tool ${isReading ? 'active' : ''}`} onClick={handleReadAloud}>
@@ -1243,14 +1447,15 @@ const StoryForgeScreen = ({
 
       <p className="forge-narrative">{GAME_CONFIG.narrativeHooks.storyForge}</p>
 
-      <div className="forge-content">
-        <div className="paragraphs">
+      <div className="forge-content" style={{ display: 'block' }}>
+        <div className="paragraphs" style={{ width: '100%', maxWidth: '900px', margin: '0 auto' }}>
           {paragraphs.map((p, i) => (
             <div key={i} className="paragraph-box">
               <span className="para-num">{i + 1}</span>
               <textarea
                 value={p}
                 onChange={(e) => handleChange(i, e.target.value)}
+                style={{ minHeight: '150px', fontSize: '16px' }}
               />
 
               {powerUpIndex === i && powerUp && (
@@ -1270,74 +1475,218 @@ const StoryForgeScreen = ({
             </div>
           ))}
         </div>
-
-        <div className="forge-sidebar">
-          <h3>📜 Your Story</h3>
-          <div className="summary-list">
-            {QUESTS.map(q => (
-              <div key={q.id} className="summary-item">
-                <span>{q.icon}</span>
-                <span>{q.title}</span>
-                <span>✅</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       <button className="btn-primary" onClick={() => onComplete(paragraphs)}>
         Create Story Book! 📖
       </button>
 
-      {/* COMPREHENSION SECTION */}
-      <div className="comprehension-section" style={{ marginTop: '40px', padding: '20px', background: '#fff', borderRadius: '15px', border: '2px solid #ddd' }}>
-        <h2 style={{ color: '#2c3e50', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>🧠 Reading Comprehension</h2>
-
-        {questions.map((q) => (
-          <div key={q.id} className="question-box" style={{ marginBottom: '20px', textAlign: 'left' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '18px', color: '#2c3e50' }}>{q.id}. {q.question}</p>
-
-            {['mcq', 'vocab', 'fill-blank', 'synonym', 'antonym', 'punctuation'].includes(q.type) ? (
-              <div className="options" style={{ display: 'grid', gridTemplateColumns: q.type === 'punctuation' ? '1fr' : '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-                {q.options.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setAnswers({ ...answers, [q.id]: opt })}
-                    style={{
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc',
-                      background: answers[q.id] === opt ? '#dcfce7' : '#f8f9fa',
-                      cursor: 'pointer',
-                      color: '#2c3e50',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <textarea
-                placeholder="Type your answer here..."
-                style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '8px', border: '1px solid #ccc', color: '#2c3e50' }}
-              />
-            )}
-
-            {showResults && (
-              <div style={{ marginTop: '10px', color: answers[q.id] === q.correctAnswer ? 'green' : 'red' }}>
-                {answers[q.id] === q.correctAnswer ? '✅ Correct!' : `❌ Correct answer: ${q.correctAnswer}`}
-              </div>
-            )}
+      {/* COMPREHENSION SECTION - Topic Explorer Style */}
+      <div style={{
+        marginTop: '40px',
+        padding: '30px',
+        background: 'linear-gradient(135deg, #1a1a3a 0%, #2d2d5a 100%)',
+        borderRadius: '20px',
+        color: 'white'
+      }}>
+        {/* Header with Legend */}
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '24px', marginBottom: '15px' }}>
+            📖 Comprehension Questions ({questions.length} Questions)
+          </h2>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#4ECDC4' }}></span>
+              MCQ
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#FFD93D' }}></span>
+              Fill-in-Blank
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#9B59B6' }}></span>
+              Descriptive
+            </span>
           </div>
-        ))}
+        </div>
+
+        {/* Questions */}
+        {questions.map((q) => {
+          const typeColor = q.type === 'mcq' ? '#4ECDC4' : q.type === 'fill-blank' ? '#FFD93D' : '#9B59B6';
+          const typeName = q.type === 'mcq' ? 'MCQ' : q.type === 'fill-blank' ? 'Fill-Blank' : 'Descriptive';
+
+          return (
+            <div key={q.id} style={{
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: '15px',
+              padding: '20px',
+              marginBottom: '20px',
+              borderLeft: `4px solid ${typeColor}`
+            }}>
+              {/* Category badges */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                <span style={{
+                  background: typeColor,
+                  color: q.type === 'fill-blank' ? '#1a1a3a' : 'white',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}>
+                  {typeName}
+                </span>
+                <span style={{
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: '12px',
+                  alignSelf: 'center'
+                }}>
+                  {q.category}
+                </span>
+                {q.difficulty && (
+                  <span style={{
+                    background: q.difficulty === 'easy' ? 'rgba(78,205,196,0.3)'
+                      : q.difficulty === 'medium' ? 'rgba(255,193,7,0.3)'
+                        : 'rgba(255,107,107,0.3)',
+                    color: 'white',
+                    padding: '4px 10px',
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    marginLeft: 'auto'
+                  }}>
+                    {q.difficulty === 'easy' ? '⭐' : q.difficulty === 'medium' ? '⭐⭐' : '⭐⭐⭐'}
+                  </span>
+                )}
+              </div>
+
+              <p style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px' }}>
+                {q.id}. {q.question}
+              </p>
+
+              {/* Hint for Apprentice and Explorer modes */}
+              {q.showHint && q.hint && (
+                <p style={{
+                  fontSize: '14px',
+                  color: '#FFD93D',
+                  marginBottom: '15px',
+                  background: 'rgba(255,217,61,0.1)',
+                  padding: '8px 15px',
+                  borderRadius: '10px',
+                  borderLeft: '3px solid #FFD93D'
+                }}>
+                  {q.hint}
+                </p>
+              )}
+
+              {/* MCQ Options - 4 choices */}
+              {q.type === 'mcq' && q.options && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {q.options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setAnswers({ ...answers, [q.id]: opt })}
+                      style={{
+                        padding: '15px 20px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: showResults
+                          ? opt === q.correctAnswer
+                            ? 'rgba(78,205,196,0.4)'
+                            : answers[q.id] === opt
+                              ? 'rgba(255,107,107,0.4)'
+                              : 'rgba(255,255,255,0.1)'
+                          : answers[q.id] === opt
+                            ? 'rgba(78,205,196,0.3)'
+                            : 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '16px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {opt}
+                      {showResults && opt === q.correctAnswer && ' ✓'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Fill-blank - Text input */}
+              {q.type === 'fill-blank' && (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Type your answer..."
+                    value={answers[q.id] || ''}
+                    onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '15px 20px',
+                      borderRadius: '10px',
+                      border: showResults
+                        ? (answers[q.id]?.toLowerCase().includes(q.correctAnswer.toLowerCase().split(' ')[0])
+                          ? '3px solid #4ECDC4'
+                          : '3px solid #FF6B6B')
+                        : '2px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      fontSize: '16px'
+                    }}
+                  />
+                  {showResults && (
+                    <p style={{ marginTop: '10px', fontSize: '14px', color: '#4ECDC4' }}>
+                      ✓ Answer: {q.correctAnswer}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Descriptive - Textarea */}
+              {q.type === 'descriptive' && (
+                <div>
+                  <textarea
+                    placeholder={q.placeholder || 'Write your answer here...'}
+                    value={answers[q.id] || ''}
+                    onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '15px',
+                      borderRadius: '10px',
+                      border: '2px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      fontSize: '16px',
+                      resize: 'vertical'
+                    }}
+                  />
+                  {showResults && answers[q.id]?.length >= 10 && (
+                    <p style={{ marginTop: '10px', color: '#4ECDC4', fontSize: '14px' }}>
+                      ✓ Great answer!
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         <button
-          className="btn-secondary"
           onClick={() => setShowResults(!showResults)}
-          style={{ marginTop: '20px', width: '100%', padding: '15px' }}
+          style={{
+            width: '100%',
+            padding: '18px',
+            borderRadius: '15px',
+            background: showResults ? '#FF6B6B' : '#4ECDC4',
+            color: 'white',
+            border: 'none',
+            fontSize: '18px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            marginTop: '20px'
+          }}
         >
-          {showResults ? 'Hide Answers' : 'Check Answers ✅'}
+          {showResults ? '🔄 Hide Answers' : '✅ Check Answers'}
         </button>
       </div>
     </div>
@@ -1438,7 +1787,7 @@ const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome 
       )}
 
       <div className="theater-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
+        <button className="btn-home" onClick={onHome}>🏠</button>
         <h1 className="story-title">{story.title}</h1>
         <button className={`btn-tool ${isReading ? 'active' : ''}`} onClick={handleRead}>
           {isReading ? '⏹️' : '🔊'}
@@ -1800,6 +2149,784 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
   );
 };
 
+// Topic Mode Screen - Learn about real topics!
+const TopicModeScreen = ({ onBack }) => {
+  const [topic, setTopic] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [passage, setPassage] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Timer and gamification state
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [timerActive, setTimerActive] = useState(false);
+  const [questionStartTime, setQuestionStartTime] = useState(null);
+  const [fastAnswers, setFastAnswers] = useState(0); // Count of fast answers
+  const [bonusRound, setBonusRound] = useState(0); // 0 = base, 1 = first bonus, 2 = second bonus
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState('');
+  const [totalScore, setTotalScore] = useState(0);
+
+  // Timer effect
+  useEffect(() => {
+    let timer;
+    if (timerActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(t => t - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, timeLeft]);
+
+  // Start timer when questions load
+  useEffect(() => {
+    if (questions.length > 0 && !showResults) {
+      setTimeLeft(questions.length * 20); // 20 seconds per question
+      setTimerActive(true);
+      setQuestionStartTime(Date.now());
+    }
+  }, [questions.length]);
+
+  // Celebration trigger effect
+  const triggerCelebration = (message) => {
+    setCelebrationMessage(message);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 3000);
+  };
+
+  const fetchTopicInfo = async (searchTopic) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Use Wikipedia API to get summary
+      const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTopic)}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Topic not found');
+      }
+
+      const data = await response.json();
+
+      if (data.type === 'disambiguation') {
+        throw new Error('Too many results - try a more specific topic');
+      }
+
+      return {
+        title: data.title,
+        extract: data.extract,
+        image: data.thumbnail?.source
+      };
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const generateTopicQuestions = (text, title) => {
+    // Extract key information from passage
+    const sentences = text.split('. ').filter(s => s.length > 15);
+    const words = text.split(/\s+/).filter(w => w.length > 4);
+    const uniqueWords = [...new Set(words.map(w => w.replace(/[^a-zA-Z]/g, '')))].filter(w => w.length > 5);
+
+    // Helper to get random wrong answers
+    const wrongAnswers = [
+      'A type of pizza', 'A video game character', 'A color', 'A number',
+      'A musical instrument', 'A planet', 'A superhero', 'A cartoon',
+      'Something you eat', 'A type of car', 'A dance move', 'A sport'
+    ];
+    const getWrong = (n = 3) => wrongAnswers.sort(() => Math.random() - 0.5).slice(0, n);
+
+    // Helper to extract a key fact from sentence
+    const extractFact = (sentence) => {
+      if (!sentence) return null;
+      const clean = sentence.replace(/[^\w\s]/g, '').trim();
+      return clean.length > 10 ? clean : null;
+    };
+
+    const questions = [];
+    let id = 1;
+
+    // ========== MCQ QUESTIONS (7 questions) ==========
+
+    // Q1: Main topic identification
+    questions.push({
+      id: id++,
+      type: 'mcq',
+      category: 'Memory',
+      question: `What is the main topic of this passage?`,
+      options: [title, ...getWrong(3)].sort(() => Math.random() - 0.5),
+      correctAnswer: title
+    });
+
+    // Q2: True/False style MCQ
+    questions.push({
+      id: id++,
+      type: 'mcq',
+      category: 'Understanding',
+      question: `This passage is mainly about ${title}. Is this correct?`,
+      options: ['Yes, that is correct', 'No, it is about cooking', 'No, it is about sports', 'No, it is about animals'],
+      correctAnswer: 'Yes, that is correct'
+    });
+
+    // Q3: First sentence comprehension
+    if (sentences[0]) {
+      const fact = sentences[0].substring(0, 60);
+      questions.push({
+        id: id++,
+        type: 'mcq',
+        category: 'Memory',
+        question: `According to the passage, which statement is true?`,
+        options: [fact + '...', 'The moon is made of cheese', 'Water flows upward', 'Trees can talk'].sort(() => Math.random() - 0.5),
+        correctAnswer: fact + '...'
+      });
+    }
+
+    // Q4: Category identification
+    questions.push({
+      id: id++,
+      type: 'mcq',
+      category: 'Concept',
+      question: `${title} can best be described as:`,
+      options: ['Something educational to learn about', 'A type of food', 'A silly joke', 'A math equation'].sort(() => Math.random() - 0.5),
+      correctAnswer: 'Something educational to learn about'
+    });
+
+    // Q5: Reading purpose
+    questions.push({
+      id: id++,
+      type: 'mcq',
+      category: 'Understanding',
+      question: `Why would someone read this passage?`,
+      options: ['To learn about ' + title, 'To learn how to cook', 'To play a game', 'To watch a movie'].sort(() => Math.random() - 0.5),
+      correctAnswer: 'To learn about ' + title
+    });
+
+    // Q6: Second sentence (if exists)
+    if (sentences[1]) {
+      const fact2 = sentences[1].substring(0, 55);
+      questions.push({
+        id: id++,
+        type: 'mcq',
+        category: 'Memory',
+        question: `What else does the passage tell us?`,
+        options: [fact2 + '...', 'Elephants can fly', 'Ice is hot', 'The sun is cold'].sort(() => Math.random() - 0.5),
+        correctAnswer: fact2 + '...'
+      });
+    }
+
+    // Q7: Word recognition
+    if (uniqueWords[0]) {
+      questions.push({
+        id: id++,
+        type: 'mcq',
+        category: 'Memory',
+        question: `Which word appears in the passage?`,
+        options: [uniqueWords[0], 'Dinosaur', 'Spaceship', 'Hamburger'].sort(() => Math.random() - 0.5),
+        correctAnswer: uniqueWords[0]
+      });
+    }
+
+    // ========== FILL IN THE BLANKS (5 questions) ==========
+
+    // Q8: Title blank
+    questions.push({
+      id: id++,
+      type: 'fill-blank',
+      category: 'Memory',
+      question: `This passage is about _________.`,
+      options: [title, 'Pizza', 'Football'],
+      correctAnswer: title
+    });
+
+    // Q9: Learning blank
+    questions.push({
+      id: id++,
+      type: 'fill-blank',
+      category: 'Understanding',
+      question: `After reading, I learned about _________.`,
+      options: [title, 'Nothing new', 'A made-up story'],
+      correctAnswer: title
+    });
+
+    // Q10: Purpose blank
+    questions.push({
+      id: id++,
+      type: 'fill-blank',
+      category: 'Concept',
+      question: `The author wrote this passage to teach us about _________.`,
+      options: [title, 'How to sing', 'How to dance'],
+      correctAnswer: title
+    });
+
+    // Q11: Key word blank (from passage)
+    if (uniqueWords[1]) {
+      questions.push({
+        id: id++,
+        type: 'fill-blank',
+        category: 'Memory',
+        question: `One important word from the passage is _________.`,
+        options: [uniqueWords[1], 'Banana', 'Skateboard'],
+        correctAnswer: uniqueWords[1]
+      });
+    }
+
+    // Q12: Fact completion
+    if (sentences[2]) {
+      const halfSentence = sentences[2].split(' ').slice(0, 4).join(' ');
+      questions.push({
+        id: id++,
+        type: 'fill-blank',
+        category: 'Memory',
+        question: `Complete: "${halfSentence} _________"`,
+        options: ['(continues from passage)', 'jumped over a rainbow', 'ate some cookies'],
+        correctAnswer: '(continues from passage)'
+      });
+    }
+
+    // ========== DESCRIPTIVE QUESTIONS (3 questions) ==========
+
+    // Q13: Summary question
+    questions.push({
+      id: id++,
+      type: 'descriptive',
+      category: 'Understanding',
+      question: `In your own words, what is ${title}? Write 1-2 sentences.`,
+      placeholder: 'Write what you learned...',
+      correctAnswer: 'Any thoughtful response about ' + title
+    });
+
+    // Q14: Connection question
+    questions.push({
+      id: id++,
+      type: 'descriptive',
+      category: 'Concept',
+      question: `Why do you think ${title} is important or interesting?`,
+      placeholder: 'I think it is important because...',
+      correctAnswer: 'Any thoughtful response'
+    });
+
+    // Q15: Personal connection
+    questions.push({
+      id: id++,
+      type: 'descriptive',
+      category: 'Understanding',
+      question: `Would you like to learn more about ${title}? Why or why not?`,
+      placeholder: 'Yes/No because...',
+      correctAnswer: 'Any thoughtful response'
+    });
+
+    // Ensure we have exactly 15 questions
+    while (questions.length < 15) {
+      questions.push({
+        id: id++,
+        type: 'mcq',
+        category: 'Memory',
+        question: `What was the topic of the passage you just read?`,
+        options: [title, 'Something else', 'I forgot', 'Not sure'].sort(() => Math.random() - 0.5),
+        correctAnswer: title
+      });
+    }
+
+    return questions.slice(0, 15);
+  };
+
+  const handleSearch = async () => {
+    if (!topic.trim()) return;
+
+    try {
+      const info = await fetchTopicInfo(topic);
+      setPassage(info);
+      setQuestions(generateTopicQuestions(info.extract, info.title));
+      setAnswers({});
+      setShowResults(false);
+    } catch (err) {
+      setError(err.message || 'Could not find that topic. Try another!');
+      setPassage(null);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswer = (qId, answer) => {
+    setAnswers(prev => ({ ...prev, [qId]: answer }));
+
+    // Check if answer was fast (within 10 seconds of starting)
+    const currentQuestion = questions.find(q => q.id === qId);
+    if (currentQuestion && currentQuestion.type !== 'descriptive') {
+      // Being fast on MCQ/fill-blank counts
+      const answeredCount = Object.keys(answers).length + 1;
+      if (answeredCount <= 5 && timeLeft > (questions.length * 20) - (answeredCount * 10)) {
+        // Answered within 10 seconds per question on average
+        setFastAnswers(prev => prev + 1);
+      }
+    }
+  };
+
+  // Generate bonus questions
+  const generateBonusQuestions = (title, round) => {
+    const bonusTypes = [
+      { type: 'mcq', q: `What is one key fact about ${title}?`, opts: ['Something from the passage', 'A random fact', 'A joke', 'A song'] },
+      { type: 'mcq', q: `Which word best describes ${title}?`, opts: ['Interesting', 'Boring', 'Scary', 'Silly'] },
+      { type: 'fill-blank', q: `Learning about ${title} helps me understand _________.`, opts: ['The world better', 'Nothing', 'Video games'] },
+      { type: 'mcq', q: `Would a teacher be happy if you learned about ${title}?`, opts: ['Yes!', 'No', 'Maybe', 'Never'] },
+      { type: 'mcq', q: `Is ${title} something real or made up?`, opts: ['Real', 'Made up', 'A dream', 'A movie'] },
+      { type: 'descriptive', q: `Write one new thing you'd like to know about ${title}:`, placeholder: 'I want to know...' },
+      { type: 'mcq', q: `How would you explain ${title} to a friend?`, opts: ['Share what I learned', 'Say nothing', 'Make something up', 'Ignore them'] },
+      { type: 'fill-blank', q: `${title} is located in _________.`, opts: ['Somewhere special', 'My room', 'The sky'] },
+      { type: 'mcq', q: `What did you enjoy most about learning this?`, opts: ['The facts!', 'Nothing', 'The pictures', 'I was confused'] },
+      { type: 'descriptive', q: `Draw or describe ${title} in your own words:`, placeholder: 'It looks like...' }
+    ];
+
+    const startId = 15 + (round * 10) + 1;
+    return bonusTypes.map((bt, idx) => ({
+      id: startId + idx,
+      type: bt.type,
+      category: round === 1 ? '🌟 Bonus' : '🏆 Champion',
+      question: bt.q,
+      options: bt.opts || [],
+      placeholder: bt.placeholder,
+      correctAnswer: bt.opts ? bt.opts[0] : 'Any thoughtful response'
+    }));
+  };
+
+  const checkAnswers = () => {
+    setTimerActive(false);
+
+    // Context-based answer checking helper
+    const isAnswerCorrect = (q, userAnswer) => {
+      if (!userAnswer) return false;
+
+      const answer = userAnswer.toString().toLowerCase().trim();
+      const correct = q.correctAnswer.toString().toLowerCase().trim();
+
+      if (q.type === 'mcq') {
+        // MCQ: exact match
+        return answer === correct;
+      } else if (q.type === 'fill-blank') {
+        // Fill-blank: check if answer contains key words from correct answer
+        const keyWords = correct.split(' ').filter(w => w.length > 3);
+        return keyWords.some(word => answer.includes(word)) || answer.includes(correct.split(' ')[0]);
+      } else if (q.type === 'descriptive') {
+        // Descriptive: any thoughtful response (10+ chars) is accepted
+        return answer.length >= 10;
+      }
+      return answer === correct;
+    };
+
+    // Calculate score
+    let correct = 0;
+    questions.forEach(q => {
+      if (isAnswerCorrect(q, answers[q.id])) {
+        correct++;
+      }
+    });
+    setTotalScore(prev => prev + correct);
+
+    // Check for bonus round eligibility
+    const timeUsed = (questions.length * 20) - timeLeft;
+    const avgTimePerQuestion = timeUsed / Object.keys(answers).length;
+    const accuracy = correct / questions.length;
+
+    // Fast AND accurate = bonus round!
+    if (avgTimePerQuestion < 15 && accuracy >= 0.6 && bonusRound < 2) {
+      // Unlock bonus round!
+      setTimeout(() => {
+        const newRound = bonusRound + 1;
+        setBonusRound(newRound);
+
+        if (newRound === 1) {
+          triggerCelebration('🎉 AMAZING! +10 Bonus Questions Unlocked!');
+        } else {
+          triggerCelebration('🏆 CHAMPION! +10 MORE Questions! You\'re a LEGEND!');
+        }
+
+        // Add bonus questions
+        const bonusQs = generateBonusQuestions(passage.title, newRound);
+        setQuestions(prev => [...prev, ...bonusQs]);
+        setShowResults(false);
+        setTimeLeft(bonusQs.length * 25); // More time for bonus
+        setTimerActive(true);
+      }, 1500);
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const suggestedTopics = ['Taj Mahal', 'London', 'Dinosaurs', 'Moon', 'Elephant', 'Rainbow'];
+
+  return (
+    <div className="screen topic-screen">
+      <button className="btn-home" onClick={onBack}>← Back</button>
+
+      {/* Celebration Overlay */}
+      {showCelebration && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            animation: 'bounceIn 0.5s ease'
+          }}>
+            <div style={{ fontSize: '100px', marginBottom: '20px' }}>
+              🎉🌟🏆🎊✨
+            </div>
+            <h2 style={{
+              fontSize: '32px',
+              color: '#FFE66D',
+              textShadow: '0 0 20px rgba(255,230,109,0.5)'
+            }}>
+              {celebrationMessage}
+            </h2>
+            <p style={{ color: 'white', marginTop: '15px', fontSize: '18px' }}>
+              Keep going, you're doing AMAZING! 💪
+            </p>
+          </div>
+        </div>
+      )}
+
+      <h2 className="screen-title">📚 Topic Explorer</h2>
+
+      {/* Timer and Progress Display */}
+      {timerActive && questions.length > 0 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '30px',
+          marginBottom: '20px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{
+            background: timeLeft < 30 ? 'rgba(255,107,107,0.2)' : 'rgba(78,205,196,0.2)',
+            padding: '15px 25px',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: timeLeft < 30 ? '2px solid #FF6B6B' : '2px solid #4ECDC4'
+          }}>
+            <span style={{ fontSize: '24px' }}>⏱️</span>
+            <span style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              color: timeLeft < 30 ? '#FF6B6B' : '#4ECDC4'
+            }}>
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            </span>
+          </div>
+
+          <div style={{
+            background: 'rgba(155,89,182,0.2)',
+            padding: '15px 25px',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: '2px solid #9B59B6'
+          }}>
+            <span style={{ fontSize: '24px' }}>📝</span>
+            <span style={{ fontSize: '18px', fontWeight: '600' }}>
+              {Object.keys(answers).length}/{questions.length} Answered
+            </span>
+          </div>
+
+          {bonusRound > 0 && (
+            <div style={{
+              background: 'rgba(255,230,109,0.2)',
+              padding: '15px 25px',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              border: '2px solid #FFE66D'
+            }}>
+              <span style={{ fontSize: '24px' }}>{bonusRound === 1 ? '🌟' : '🏆'}</span>
+              <span style={{ fontSize: '18px', fontWeight: '600', color: '#FFE66D' }}>
+                BONUS ROUND {bonusRound}!
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', marginBottom: '20px' }}>
+        {timerActive ? '⚡ Answer fast to unlock BONUS questions!' : 'Learn about anything in the world!'}
+      </p>
+
+      <div className="topic-search-box">
+        <input
+          type="text"
+          placeholder="Enter a topic (e.g., Taj Mahal, London)"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          style={{
+            width: '100%',
+            maxWidth: '400px',
+            padding: '15px 20px',
+            fontSize: '18px',
+            borderRadius: '25px',
+            border: '3px solid rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.1)',
+            color: 'white',
+            outline: 'none'
+          }}
+        />
+        <button
+          className="btn btn-hero"
+          onClick={handleSearch}
+          disabled={loading || !topic.trim()}
+          style={{ marginTop: '15px' }}
+        >
+          {loading ? '🔍 Searching...' : '🔍 Search'}
+        </button>
+      </div>
+
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>Try these:</p>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {suggestedTopics.map(t => (
+            <button
+              key={t}
+              onClick={() => { setTopic(t); }}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div style={{
+          background: 'rgba(255,107,107,0.2)',
+          padding: '20px',
+          borderRadius: '15px',
+          marginTop: '30px',
+          textAlign: 'center',
+          maxWidth: '500px',
+          margin: '30px auto'
+        }}>
+          <p>😕 {error}</p>
+        </div>
+      )}
+
+      {passage && (
+        <div style={{ marginTop: '40px', maxWidth: '800px', margin: '40px auto' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.08)',
+            borderRadius: '20px',
+            padding: '30px',
+            marginBottom: '30px'
+          }}>
+            <h3 style={{ fontSize: '28px', marginBottom: '15px' }}>📖 {passage.title}</h3>
+            {passage.image && (
+              <img
+                src={passage.image}
+                alt={passage.title}
+                style={{
+                  maxWidth: '200px',
+                  borderRadius: '15px',
+                  float: 'right',
+                  marginLeft: '20px',
+                  marginBottom: '10px'
+                }}
+              />
+            )}
+            <p style={{ fontSize: '18px', lineHeight: '1.8', color: 'rgba(255,255,255,0.9)' }}>
+              {passage.extract}
+            </p>
+          </div>
+
+          <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>📝 Comprehension Questions (15 Questions)</h3>
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', marginBottom: '25px' }}>
+            🟢 MCQ • 🟡 Fill-in-Blank • 🟣 Descriptive
+          </p>
+
+          {questions.map((q) => (
+            <div key={q.id} style={{
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: '15px',
+              padding: '20px',
+              marginBottom: '15px',
+              borderLeft: q.type === 'mcq' ? '4px solid #4ECDC4' : q.type === 'fill-blank' ? '4px solid #FFE66D' : '4px solid #9B59B6'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{
+                  background: q.type === 'mcq' ? '#4ECDC4' : q.type === 'fill-blank' ? '#FFE66D' : '#9B59B6',
+                  color: q.type === 'fill-blank' ? '#333' : 'white',
+                  padding: '4px 12px',
+                  borderRadius: '15px',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}>
+                  {q.type === 'mcq' ? 'MCQ' : q.type === 'fill-blank' ? 'FILL BLANK' : 'DESCRIPTIVE'}
+                </span>
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{q.category}</span>
+              </div>
+
+              <p style={{ fontSize: '18px', marginBottom: '15px', fontWeight: '600' }}>
+                {q.id}. {q.question}
+              </p>
+
+              {/* MCQ: Show options as buttons */}
+              {q.type === 'mcq' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {q.options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswer(q.id, opt)}
+                      style={{
+                        padding: '12px 20px',
+                        borderRadius: '10px',
+                        border: answers[q.id] === opt ? '3px solid #4ECDC4' : '2px solid rgba(255,255,255,0.2)',
+                        background: showResults
+                          ? opt === q.correctAnswer
+                            ? 'rgba(78,205,196,0.3)'
+                            : answers[q.id] === opt
+                              ? 'rgba(255,107,107,0.3)'
+                              : 'rgba(255,255,255,0.05)'
+                          : answers[q.id] === opt
+                            ? 'rgba(78,205,196,0.2)'
+                            : 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '16px'
+                      }}
+                    >
+                      {opt}
+                      {showResults && opt === q.correctAnswer && ' ✓'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Fill-blank: Text input (no choices) */}
+              {q.type === 'fill-blank' && (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Type your answer..."
+                    value={answers[q.id] || ''}
+                    onChange={(e) => handleAnswer(q.id, e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '15px 20px',
+                      borderRadius: '10px',
+                      border: showResults
+                        ? (answers[q.id]?.toLowerCase().includes(q.correctAnswer.toLowerCase().split(' ')[0])
+                          ? '3px solid #4ECDC4'
+                          : '3px solid #FF6B6B')
+                        : '2px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'white',
+                      fontSize: '16px',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  {showResults && (
+                    <p style={{
+                      marginTop: '10px',
+                      color: answers[q.id]?.toLowerCase().includes(q.correctAnswer.toLowerCase().split(' ')[0]) ? '#4ECDC4' : '#FF6B6B',
+                      fontSize: '14px'
+                    }}>
+                      {answers[q.id]?.toLowerCase().includes(q.correctAnswer.toLowerCase().split(' ')[0])
+                        ? `✓ Correct! The answer is: ${q.correctAnswer}`
+                        : `✗ The correct answer is: ${q.correctAnswer}`}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Descriptive: Show textarea */}
+              {q.type === 'descriptive' && (
+                <div>
+                  <textarea
+                    placeholder={q.placeholder || 'Write your answer here...'}
+                    value={answers[q.id] || ''}
+                    onChange={(e) => handleAnswer(q.id, e.target.value)}
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '15px',
+                      borderRadius: '10px',
+                      border: '2px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'white',
+                      fontSize: '16px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  {showResults && (
+                    <p style={{ marginTop: '10px', color: '#4ECDC4', fontSize: '14px' }}>
+                      ✓ Great job writing your thoughts! ({q.correctAnswer})
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {questions.length > 0 && !showResults && (
+            <button
+              className="btn btn-hero"
+              onClick={checkAnswers}
+              style={{ display: 'block', margin: '20px auto' }}
+            >
+              ✅ Check Answers
+            </button>
+          )}
+
+          {showResults && (
+            <div style={{
+              textAlign: 'center',
+              padding: '30px',
+              background: 'rgba(78,205,196,0.15)',
+              borderRadius: '20px',
+              marginTop: '20px'
+            }}>
+              <h3 style={{ fontSize: '24px' }}>🎉 Great Job!</h3>
+              <p>You learned about {passage.title}!</p>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setPassage(null);
+                  setTopic('');
+                  setQuestions([]);
+                  setShowResults(false);
+                }}
+                style={{ marginTop: '15px' }}
+              >
+                🔍 Explore Another Topic
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Story Generator
 const generateStory = async (choices) => {
   await new Promise(r => setTimeout(r, 3000));
@@ -1909,6 +3036,10 @@ export default function StoryQuestApp() {
     setScreen(SCREENS.QUEST_MAP);
   };
 
+  const handleTopicMode = () => {
+    setScreen(SCREENS.TOPIC_MODE);
+  };
+
   const handleSelectQuest = (i) => {
     setCurrentQuest(i);
     setScreen(SCREENS.QUEST_ACTIVE);
@@ -1978,7 +3109,19 @@ export default function StoryQuestApp() {
   };
 
   const goToMap = () => setScreen(SCREENS.QUEST_MAP);
-  const goHome = () => setScreen(SCREENS.WELCOME);
+
+  // Reset all app state and go to adventure select
+  const goHome = () => {
+    setStory(null);
+    setChoices({});
+    setCompleted([]);
+    setBadges([]);
+    setCurrentQuest(0);
+    setAnswers({});
+    setReflection(null);
+    setAdventure('explorer'); // Reset to default
+    setScreen(SCREENS.ADVENTURE_SELECT);
+  };
 
   return (
     <div className={`app theme-${adventure}`}>
@@ -2586,6 +3729,20 @@ export default function StoryQuestApp() {
         .apprentice:hover { border-color: #4ECDC4; }
         .explorer:hover { border-color: #FFE66D; }
         .legend:hover { border-color: #FF6B6B; }
+        .topic-mode:hover { border-color: #9B59B6; }
+        .topic-mode .card-glow { background: radial-gradient(circle, rgba(155,89,182,0.15) 0%, transparent 70%); }
+        
+        .topic-screen {
+          max-width: 900px;
+          width: 100%;
+        }
+        
+        .topic-search-box {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-top: 20px;
+        }
         
         .card-icon {
           font-size: 70px;
@@ -4369,7 +5526,8 @@ export default function StoryQuestApp() {
       `}</style>
 
       {screen === SCREENS.WELCOME && <WelcomeScreen onStart={handleStart} />}
-      {screen === SCREENS.ADVENTURE_SELECT && <AdventureSelectScreen onSelect={handleAdventure} onHome={goHome} />}
+      {screen === SCREENS.ADVENTURE_SELECT && <AdventureSelectScreen onSelect={handleAdventure} onHome={goHome} onTopicMode={handleTopicMode} />}
+      {screen === SCREENS.TOPIC_MODE && <TopicModeScreen onBack={goHome} />}
       {screen === SCREENS.QUEST_MAP && (
         <QuestMapScreen
           completed={completed}
