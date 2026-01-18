@@ -1295,10 +1295,10 @@ const StoryForgeScreen = ({
 
         {questions.map((q) => (
           <div key={q.id} className="question-box" style={{ marginBottom: '20px', textAlign: 'left' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '18px' }}>{q.id}. {q.question}</p>
+            <p style={{ fontWeight: 'bold', fontSize: '18px', color: '#2c3e50' }}>{q.id}. {q.question}</p>
 
-            {q.type === 'mcq' || q.type === 'vocab' || q.type === 'fill-blank' ? (
-              <div className="options" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+            {['mcq', 'vocab', 'fill-blank', 'synonym', 'antonym', 'punctuation'].includes(q.type) ? (
+              <div className="options" style={{ display: 'grid', gridTemplateColumns: q.type === 'punctuation' ? '1fr' : '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                 {q.options.map((opt) => (
                   <button
                     key={opt}
@@ -1308,7 +1308,9 @@ const StoryForgeScreen = ({
                       borderRadius: '8px',
                       border: '1px solid #ccc',
                       background: answers[q.id] === opt ? '#dcfce7' : '#f8f9fa',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      color: '#2c3e50',
+                      fontWeight: '500'
                     }}
                   >
                     {opt}
@@ -1318,7 +1320,7 @@ const StoryForgeScreen = ({
             ) : (
               <textarea
                 placeholder="Type your answer here..."
-                style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
+                style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '8px', border: '1px solid #ccc', color: '#2c3e50' }}
               />
             )}
 
@@ -3237,7 +3239,7 @@ export default function StoryQuestApp() {
         .paragraphs {
           display: flex;
           flex-direction: column;
-          gap: 22px;
+          gap: 40px;
         }
         
         .paragraph-box {
@@ -3264,16 +3266,17 @@ export default function StoryQuestApp() {
         
         .paragraph-box textarea {
           width: 100%;
-          min-height: 110px;
-          padding: 18px;
+          min-height: 350px;
+          padding: 25px;
           border-radius: 15px;
           border: 3px solid rgba(255,255,255,0.1);
-          background: rgba(0,0,0,0.25);
+          background: rgba(0,0,0,0.4);
           color: white;
-          font-size: 17px;
+          font-size: 19px;
           font-family: 'Nunito', sans-serif;
-          line-height: 1.7;
+          line-height: 1.8;
           resize: vertical;
+          box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
         }
         
         .paragraph-box textarea:focus {

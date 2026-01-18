@@ -5,12 +5,18 @@
 // ==========================================
 
 export const generateEpicStory = (choices, adventureMode) => {
+    const prettify = (str) => {
+        if (!str) return '';
+        return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
+
     const getVal = (key) => {
         const c = choices[key];
         if (!c) return '';
         if (c.type === 'text') return c.value || '';
         if (c.type === 'drawing') return 'the hero';
-        return typeof c === 'string' ? c : (c.label || '');
+        const val = typeof c === 'string' ? c : (c.label || '');
+        return prettify(val);
     };
 
     const heroType = getVal('hero');
@@ -259,16 +265,22 @@ export const generateEpicStory = (choices, adventureMode) => {
 
 // ==========================================
 // 🧠 COMPREHENSION GENERATOR
-// Generates questions based on the story choices
+// Generates diverse question types
 // ==========================================
 
 export const generateComprehension = (choices) => {
+    const prettify = (str) => {
+        if (!str) return '';
+        return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
+
     const getVal = (key) => {
         const c = choices[key];
         if (!c) return '';
         if (c.type === 'text') return c.value || '';
         if (c.type === 'drawing') return 'the hero';
-        return typeof c === 'string' ? c : (c.label || '');
+        const val = typeof c === 'string' ? c : (c.label || '');
+        return prettify(val);
     };
 
     const hero = getVal('hero');
@@ -276,45 +288,64 @@ export const generateComprehension = (choices) => {
     const trouble = getVal('trouble');
     const victory = getVal('victory');
 
-    return [
-        {
-            id: 1,
-            type: 'mcq',
-            question: `Who is the main character in this story?`,
-            options: [hero, 'A Dragon', 'A Ghost', 'A King'],
-            correctAnswer: hero,
-            hint: 'Recall who the story is about.'
-        },
-        {
-            id: 2,
-            type: 'fill-blank',
-            question: `The hero lived in a magical place called ________.`,
-            options: [world, 'The Moon', 'The Ocean', 'The Desert'],
-            correctAnswer: world,
-            hint: 'Where did the story begin?'
-        },
-        {
-            id: 3,
-            type: 'mcq',
-            question: `What was the great trouble they faced?`,
-            options: [trouble, 'A Flood', 'An Earthquake', 'A Fire'],
-            correctAnswer: trouble,
-            hint: 'What caused fear in the land?'
-        },
-        {
-            id: 4,
-            type: 'open-ended',
-            question: `Why do you think the hero chose to use ${victory}?`,
-            correctAnswer: `(Answers will vary) Because ${victory} was their special power/tool.`,
-            hint: 'Think about the hero\'s decision in the battle.'
-        },
-        {
-            id: 5,
-            type: 'vocab',
-            question: `Which word describes the hero's feeling of being "brave" or "unafraid"?`,
-            options: ['Courageous', 'Timorous', 'Sleepy', 'Confused'],
-            correctAnswer: 'Courageous',
-            hint: 'Synonym for brave.'
-        }
-    ];
+    // 1. FILL IN THE BLANK (Context)
+    const fillBlankQ = {
+        id: 1,
+        type: 'fill-blank',
+        question: `The brave ${hero} started their journey in ________.`,
+        sentence: `The brave ${hero} started their journey in ________.`,
+        options: [world, 'The Ocean', 'Space', 'The City'],
+        correctAnswer: world,
+        hint: 'Where does the story take place?'
+    };
+
+    // 2. SYNONYM (Vocabulary)
+    // Common words used in story: 'Ancient', 'Courageous', 'Treacherous'
+    const synonymQ = {
+        id: 2,
+        type: 'synonym',
+        question: `Which word means the SAME as "Courageous"?`,
+        targetWord: 'Courageous',
+        options: ['Brave', 'Scared', 'Sleepy', 'Weak'],
+        correctAnswer: 'Brave',
+        hint: 'Think about a hero.'
+    };
+
+    // 3. ANTONYM (Vocabulary)
+    const antonymQ = {
+        id: 3,
+        type: 'antonym',
+        question: `Which word means the OPPOSITE of "Ancient"?`,
+        targetWord: 'Ancient',
+        options: ['Modern', 'Old', 'Dusty', 'Broken'],
+        correctAnswer: 'Modern',
+        hint: 'Ancient means very old.'
+    };
+
+    // 4. PUNCTUATION (Grammar)
+    // Identify correct sentence
+    const correctSentence = `The ${hero} saved the day!`;
+    const wrong1 = `the ${hero} saved the day`; // lowercase
+    const wrong2 = `The ${hero} saved the day`; // no punc
+    const wrong3 = `The ${hero} saved, the day?`; // bad punc
+
+    const punctuationQ = {
+        id: 4,
+        type: 'punctuation',
+        question: `Which sentence has the CORRECT punctuation?`,
+        options: [correctSentence, wrong1, wrong2, wrong3].sort(() => Math.random() - 0.5),
+        correctAnswer: correctSentence,
+        hint: 'Look for capital letters and ending marks.'
+    };
+
+    // 5. OPEN ENDED (Critical Thinking)
+    const openQ = {
+        id: 5,
+        type: 'open-ended',
+        question: `If you were the ${hero}, what would you have done differently?`,
+        correctAnswer: `(Answers will vary)`,
+        hint: 'Use your imagination!'
+    };
+
+    return [fillBlankQ, synonymQ, antonymQ, punctuationQ, openQ];
 };
