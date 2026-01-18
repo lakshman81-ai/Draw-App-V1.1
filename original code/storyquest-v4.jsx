@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { generateEpicStory, generateComprehension } from './storyGenerator';
+import React, { useState, useRef, useEffect } from 'react';
 
 // ============================================
 // 🎮 STORYQUEST - THE ADVENTURE BEGINS
@@ -14,7 +13,7 @@ import { generateEpicStory, generateComprehension } from './storyGenerator';
 const GAME_CONFIG = {
   title: "StoryQuest",
   subtitle: "The Adventure Begins",
-
+  
   // Narrative hooks for each screen
   narrativeHooks: {
     welcome: "A magical story is waiting… but it needs YOU.",
@@ -25,7 +24,7 @@ const GAME_CONFIG = {
     crystal: "The crystal reveals your destiny...",
     victory: "A new legend is born!"
   },
-
+  
   // Celebration messages - high energy!
   celebrations: [
     "🔥 EPIC!",
@@ -37,7 +36,7 @@ const GAME_CONFIG = {
     "✨ MAGICAL!",
     "🎯 PERFECT!"
   ],
-
+  
   // Encouraging unlock messages
   unlockMessages: {
     hero: "Your hero has awakened! 🦸",
@@ -46,7 +45,7 @@ const GAME_CONFIG = {
     victory: "Victory is near! ⚔️",
     ending: "Your legend is complete! 👑"
   },
-
+  
   // Loading messages with personality
   loadingMessages: [
     "🧙 The Story Master is thinking...",
@@ -201,243 +200,16 @@ const ADVENTURES = {
 
 // ===== COMPONENTS =====
 
-// Drawing Canvas Component - Kid-Friendly Drawing Tool
-const DrawingCanvas = ({ onSave, initialImage, width = 320, height = 280 }) => {
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [color, setColor] = useState('#FF6B6B');
-  const [brushSize, setBrushSize] = useState(8);
-  const [tool, setTool] = useState('brush'); // 'brush' or 'eraser'
-  const [history, setHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
-  const colors = [
-    '#FF6B6B', // Red
-    '#FFE66D', // Yellow
-    '#4ECDC4', // Teal
-    '#45B7D1', // Blue
-    '#96CEB4', // Green
-    '#DDA0DD', // Plum
-    '#FF8C42', // Orange
-    '#1a1a3a'  // Dark (almost black)
-  ];
-
-  const brushSizes = [
-    { size: 4, label: 'S', name: 'Small' },
-    { size: 8, label: 'M', name: 'Medium' },
-    { size: 16, label: 'L', name: 'Large' }
-  ];
-
-  // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, width, height);
-
-    if (initialImage) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        saveToHistory();
-      };
-      img.src = initialImage;
-    } else {
-      saveToHistory();
-    }
-  }, []);
-
-  const saveToHistory = () => {
-    const canvas = canvasRef.current;
-    const imageData = canvas.toDataURL();
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(imageData);
-      if (newHistory.length > 10) newHistory.shift();
-      return newHistory;
-    });
-    setHistoryIndex(prev => Math.min(prev + 1, 9));
-  };
-
-  const getPosition = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    if (e.touches) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY
-      };
-    }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
-    };
-  };
-
-  const startDrawing = (e) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const pos = getPosition(e);
-
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const pos = getPosition(e);
-
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    if (tool === 'eraser') {
-      ctx.strokeStyle = '#FFFFFF';
-    } else {
-      ctx.strokeStyle = color;
-    }
-
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  };
-
-  const stopDrawing = (e) => {
-    if (isDrawing) {
-      e?.preventDefault();
-      setIsDrawing(false);
-      saveToHistory();
-      triggerSave();
-    }
-  };
-
-  const triggerSave = () => {
-    const canvas = canvasRef.current;
-    onSave(canvas.toDataURL('image/png'));
-  };
-
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0);
-        triggerSave();
-      };
-      img.src = history[newIndex];
-      setHistoryIndex(newIndex);
-    }
-  };
-
-  const handleClear = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, width, height);
-    saveToHistory();
-    triggerSave();
-  };
-
-  return (
-    <div className="drawing-canvas-container">
-      <div className="drawing-toolbar">
-        <div className="tool-group colors">
-          {colors.map(c => (
-            <button
-              key={c}
-              className={`color-btn ${color === c && tool === 'brush' ? 'active' : ''}`}
-              style={{ background: c }}
-              onClick={() => { setColor(c); setTool('brush'); }}
-              title={`Color: ${c}`}
-            />
-          ))}
-        </div>
-
-        <div className="tool-group sizes">
-          {brushSizes.map(b => (
-            <button
-              key={b.size}
-              className={`size-btn ${brushSize === b.size ? 'active' : ''}`}
-              onClick={() => setBrushSize(b.size)}
-              title={b.name}
-            >
-              <span style={{
-                width: b.size * 1.5,
-                height: b.size * 1.5,
-                background: tool === 'brush' ? color : '#888',
-                borderRadius: '50%',
-                display: 'inline-block'
-              }} />
-            </button>
-          ))}
-        </div>
-
-        <div className="tool-group tools">
-          <button
-            className={`tool-btn ${tool === 'eraser' ? 'active' : ''}`}
-            onClick={() => setTool('eraser')}
-            title="Eraser"
-          >
-            🧹
-          </button>
-          <button
-            className="tool-btn"
-            onClick={handleUndo}
-            disabled={historyIndex <= 0}
-            title="Undo"
-          >
-            ↩️
-          </button>
-          <button
-            className="tool-btn"
-            onClick={handleClear}
-            title="Clear All"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="drawing-canvas"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-      />
-
-      <p className="drawing-hint">✨ Draw your {tool === 'eraser' ? 'erasing' : 'creation'}!</p>
-    </div>
-  );
-};
-
 // Confetti Burst
 const ConfettiBurst = ({ active }) => {
   if (!active) return null;
   const pieces = ['🎉', '⭐', '✨', '🌟', '💫', '🎊', '💥', '🔥', '👑', '🏆'];
-
+  
   return (
     <div className="confetti-burst">
       {[...Array(40)].map((_, i) => (
-        <span
-          key={i}
+        <span 
+          key={i} 
           className="confetti-piece"
           style={{
             left: `${Math.random() * 100}%`,
@@ -468,7 +240,7 @@ const CelebrationPopup = ({ message, show }) => {
 const StoryGuide = ({ mood = 'excited', size = 'medium', message, animate = true }) => {
   const sizes = { small: 70, medium: 110, large: 150 };
   const s = sizes[size];
-
+  
   const moods = {
     excited: { eyes: '★', mouth: 'D', glow: '#FFE66D' },
     proud: { eyes: '♥', mouth: '◡', glow: '#FF6B6B' },
@@ -476,9 +248,9 @@ const StoryGuide = ({ mood = 'excited', size = 'medium', message, animate = true
     thinking: { eyes: '◑', mouth: '○', glow: '#4ECDC4' },
     celebrating: { eyes: '✧', mouth: 'D', glow: '#FFD700' }
   };
-
+  
   const m = moods[mood] || moods.excited;
-
+  
   return (
     <div className="guide-wrapper">
       <div className={`guide ${animate ? 'animate' : ''}`} style={{ width: s, height: s }}>
@@ -508,10 +280,10 @@ const StoryGuide = ({ mood = 'excited', size = 'medium', message, animate = true
 const Badge = ({ icon, name, unlocked, size = 'medium' }) => {
   const sizes = { small: 55, medium: 75, large: 95 };
   const s = sizes[size];
-
+  
   return (
-    <div
-      className={`badge ${unlocked ? 'unlocked' : 'locked'}`}
+    <div 
+      className={`badge ${unlocked ? 'unlocked' : 'locked'}`} 
       style={{ width: s, height: s }}
     >
       <div className="badge-inner">
@@ -549,7 +321,7 @@ const WelcomeScreen = ({ onStart }) => (
         <span key={i} className={`float-icon fi-${i}`}>{e}</span>
       ))}
     </div>
-
+    
     <div className="welcome-content">
       <div className="logo-area">
         <span className="logo-book">📖</span>
@@ -559,18 +331,18 @@ const WelcomeScreen = ({ onStart }) => (
         </h1>
         <p className="game-subtitle">The Adventure Begins</p>
       </div>
-
+      
       <StoryGuide mood="excited" size="large" />
-
+      
       <div className="narrative-hook">
         <p>{GAME_CONFIG.narrativeHooks.welcome}</p>
       </div>
-
+      
       <button className="btn btn-hero" onClick={onStart}>
         <span className="btn-icon">⚔️</span>
         <span>Begin Your Quest!</span>
       </button>
-
+      
       <div className="badge-preview">
         <p>Collect all badges:</p>
         <div className="badge-row">
@@ -582,14 +354,12 @@ const WelcomeScreen = ({ onStart }) => (
 );
 
 // Adventure Select Screen
-const AdventureSelectScreen = ({ onSelect, onHome }) => (
+const AdventureSelectScreen = ({ onSelect }) => (
   <div className="screen adventure-screen">
-    <button className="btn-home" onClick={onHome}>🏠 Home</button>
-
     <StoryGuide mood="mysterious" message="Choose your path, adventurer..." />
-
+    
     <h2 className="screen-title">Pick Your Adventure!</h2>
-
+    
     <div className="adventure-grid">
       <button className="adventure-card apprentice" onClick={() => onSelect(ADVENTURES.APPRENTICE)}>
         <div className="card-glow"></div>
@@ -602,7 +372,7 @@ const AdventureSelectScreen = ({ onSelect, onHome }) => (
           <li>⭐ Easy badges</li>
         </ul>
       </button>
-
+      
       <button className="adventure-card explorer" onClick={() => onSelect(ADVENTURES.EXPLORER)}>
         <div className="card-glow"></div>
         <div className="popular-tag">⭐ Popular!</div>
@@ -615,7 +385,7 @@ const AdventureSelectScreen = ({ onSelect, onHome }) => (
           <li>⭐⭐ More rewards</li>
         </ul>
       </button>
-
+      
       <button className="adventure-card legend" onClick={() => onSelect(ADVENTURES.LEGEND)}>
         <div className="card-glow"></div>
         <span className="card-icon">👑</span>
@@ -632,59 +402,30 @@ const AdventureSelectScreen = ({ onSelect, onHome }) => (
 );
 
 // Quest Map Screen
-const QuestMapScreen = ({
-  completed,
-  current,
+const QuestMapScreen = ({ 
+  completed, 
+  current, 
   badges,
   onSelectQuest,
-  onStartStory,
-  onHome,
-  adventure
+  onStartStory 
 }) => {
   const allDone = completed.length === QUESTS.length;
-
-  const getAdventureBadge = () => {
-    switch (adventure) {
-      case 'apprentice': return { icon: '🌱', label: 'Story Apprentice' };
-      case 'explorer': return { icon: '🧭', label: 'Story Explorer' };
-      case 'legend': return { icon: '👑', label: 'Story Legend' };
-      default: return null;
-    }
-  };
-
-  const modeBadge = getAdventureBadge();
-
+  
   return (
     <div className="screen quest-map-screen">
       <div className="map-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
         <h2 className="screen-title">🗺️ Quest Map</h2>
-        {modeBadge && (
-          <div className="mode-badge" style={{
-            background: 'rgba(255,255,255,0.1)',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginTop: '10px',
-            border: '1px solid rgba(255,255,255,0.2)'
-          }}>
-            <span style={{ fontSize: '20px' }}>{modeBadge.icon}</span>
-            <span style={{ color: '#aaa', fontWeight: 'bold' }}>{modeBadge.label}</span>
-          </div>
-        )}
         <StoryMeter value={completed.length} max={QUESTS.length} label="Story Power" />
       </div>
-
+      
       <p className="map-narrative">{GAME_CONFIG.narrativeHooks.questMap}</p>
-
+      
       <div className="quest-trail">
         {QUESTS.map((quest, i) => {
           const isDone = completed.includes(quest.id);
           const isCurrent = current === i && !isDone;
           const isLocked = i > completed.length;
-
+          
           return (
             <div key={quest.id} className="quest-node-wrap">
               <button
@@ -700,7 +441,7 @@ const QuestMapScreen = ({
                 </span>
                 {isDone && <span className="node-badge">{quest.badge}</span>}
               </button>
-
+              
               {i < QUESTS.length - 1 && (
                 <div className={`trail-line ${isDone ? 'lit' : ''}`}>
                   <span></span><span></span><span></span>
@@ -710,12 +451,12 @@ const QuestMapScreen = ({
           );
         })}
       </div>
-
+      
       <div className="badges-area">
         <h3>🏆 Your Badges</h3>
         <div className="badges-grid">
           {QUESTS.map(q => (
-            <Badge
+            <Badge 
               key={q.id}
               icon={q.badge}
               name={q.badgeName}
@@ -725,14 +466,14 @@ const QuestMapScreen = ({
           ))}
         </div>
       </div>
-
+      
       {allDone && (
         <button className="btn btn-hero glow" onClick={onStartStory}>
           <span className="btn-icon">✨</span>
           <span>Bring My Story to Life!</span>
         </button>
       )}
-
+      
       {!allDone && completed.length > 0 && (
         <p className="unlock-hint">
           ✨ {QUESTS.length - completed.length} more quest{QUESTS.length - completed.length > 1 ? 's' : ''} to unlock your story!
@@ -749,172 +490,44 @@ const QuestActiveScreen = ({
   adventure,
   selection,
   onComplete,
-  onBack,
-  onHome
+  onBack
 }) => {
-  const [mode, setMode] = useState('describe'); // 'describe', 'draw', 'capture', 'upload'
-  const [selected, setSelected] = useState(selection?.type === 'text' ? selection.value : null);
+  const [selected, setSelected] = useState(selection || null);
   const [custom, setCustom] = useState('');
-  const [drawing, setDrawing] = useState(selection?.type === 'drawing' ? selection.data : null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
-  const [cameraStream, setCameraStream] = useState(null);
-  const [cameraError, setCameraError] = useState(null);
-  const videoRef = useRef(null);
-  const fileInputRef = useRef(null);
-
-  // Cleanup camera on unmount or mode change
-  useEffect(() => {
-    return () => {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [cameraStream]);
-
+  
   const handleSelect = (id) => {
     setSelected(id);
     setCustom('');
+    
+    // Trigger celebration
     setCelebrationMsg(GAME_CONFIG.celebrations[Math.floor(Math.random() * GAME_CONFIG.celebrations.length)]);
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 1200);
   };
-
+  
   const handleCustom = (text) => {
     setCustom(text);
     setSelected(null);
   };
-
-  const handleDrawingSave = (dataUrl) => {
-    setDrawing(dataUrl);
-    if (!drawing) {
-      setCelebrationMsg("🎨 Amazing artwork!");
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 1200);
-    }
-  };
-
-  // Camera capture functions
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: 320, height: 280 }
-      });
-      setCameraStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      setCameraError("📷 Camera not available. Try uploading instead!");
-      console.error('Camera error:', err);
-    }
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 280;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoRef.current, 0, 0, 320, 280);
-
-    const dataUrl = canvas.toDataURL('image/png');
-    setDrawing(dataUrl);
-
-    // Stop camera after capture
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-
-    setCelebrationMsg("📸 Perfect shot!");
-    setShowCelebration(true);
-    setTimeout(() => setShowCelebration(false), 1200);
-  };
-
-  // File upload function
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setCameraError("Please select an image file!");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      // Resize image to canvas size
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 320;
-        canvas.height = 280;
-        const ctx = canvas.getContext('2d');
-
-        // Center and fit image
-        const scale = Math.min(320 / img.width, 280 / img.height);
-        const x = (320 - img.width * scale) / 2;
-        const y = (280 - img.height * scale) / 2;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, 320, 280);
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-
-        setDrawing(canvas.toDataURL('image/png'));
-        setCelebrationMsg("🖼️ Beautiful picture!");
-        setShowCelebration(true);
-        setTimeout(() => setShowCelebration(false), 1200);
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Start camera when entering capture mode
-  useEffect(() => {
-    if (mode === 'capture' && !cameraStream && !drawing) {
-      startCamera();
-    } else if (mode !== 'capture' && cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-  }, [mode]);
-
-  const canGo = (mode === 'draw' || mode === 'capture' || mode === 'upload')
-    ? drawing !== null
-    : (selected || custom.length > 3);
-
+  
+  const canGo = selected || custom.length > 3;
+  
   const handleGo = () => {
-    if ((mode === 'draw' || mode === 'capture' || mode === 'upload') && drawing) {
-      onComplete(quest.id, { type: 'drawing', data: drawing }, questIndex);
-    } else {
-      onComplete(quest.id, { type: 'text', value: selected || custom }, questIndex);
-    }
+    onComplete(quest.id, selected || custom, questIndex);
   };
-
-  const getButtonText = () => {
-    if (canGo) return "Lock It In!";
-    switch (mode) {
-      case 'draw': return "Draw something first!";
-      case 'capture': return "Take a photo first!";
-      case 'upload': return "Upload an image first!";
-      default: return "Pick something first!";
-    }
-  };
-
+  
   return (
     <div className="screen quest-active-screen">
       <ConfettiBurst active={showCelebration} />
       <CelebrationPopup message={celebrationMsg} show={showCelebration} />
-
+      
       <div className="quest-top-bar">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
         <button className="btn-back" onClick={onBack}>← Map</button>
         <span className="quest-progress">Quest {questIndex + 1} of {QUESTS.length}</span>
       </div>
-
+      
       <div className="quest-main">
         <div className="quest-header">
           <span className="quest-icon-big">{quest.icon}</span>
@@ -923,266 +536,97 @@ const QuestActiveScreen = ({
             <span>Unlock:</span> {quest.badge} {quest.badgeName}
           </div>
         </div>
-
+        
         <StoryGuide mood="excited" size="small" message={quest.prompt} />
-
-        {/* Mode Toggle Tabs */}
+        
+        <div className="options-grid">
+          {quest.options.map(opt => (
+            <button
+              key={opt.id}
+              className={`option-card ${selected === opt.id ? 'selected' : ''}`}
+              onClick={() => handleSelect(opt.id)}
+            >
+              <span className="opt-emoji">{opt.emoji}</span>
+              <span className="opt-label">{opt.label}</span>
+              {selected === opt.id && <span className="opt-check">✓</span>}
+            </button>
+          ))}
+        </div>
+        
         {adventure !== ADVENTURES.APPRENTICE && (
-          <div className="mode-toggle">
-            <button
-              className={`mode-tab ${mode === 'describe' ? 'active' : ''}`}
-              onClick={() => setMode('describe')}
-            >
-              ✍️ Describe
-            </button>
-            <button
-              className={`mode-tab ${mode === 'draw' ? 'active' : ''}`}
-              onClick={() => setMode('draw')}
-            >
-              🎨 Draw
-            </button>
-            <button
-              className={`mode-tab ${mode === 'capture' ? 'active' : ''}`}
-              onClick={() => setMode('capture')}
-            >
-              📷 Capture
-            </button>
-            <button
-              className={`mode-tab ${mode === 'upload' ? 'active' : ''}`}
-              onClick={() => setMode('upload')}
-            >
-              📁 Upload
-            </button>
-          </div>
-        )}
-
-        {/* Describe Mode */}
-        {mode === 'describe' && (
-          <>
-            <div className="options-grid">
-              {quest.options.map(opt => (
-                <button
-                  key={opt.id}
-                  className={`option-card ${selected === opt.id ? 'selected' : ''}`}
-                  onClick={() => handleSelect(opt.id)}
-                >
-                  <span className="opt-emoji">{opt.emoji}</span>
-                  <span className="opt-label">{opt.label}</span>
-                  {selected === opt.id && <span className="opt-check">✓</span>}
-                </button>
-              ))}
-            </div>
-
-            {adventure !== ADVENTURES.APPRENTICE && (
-              <div className="custom-section">
-                <p>— or create your own —</p>
-                <input
-                  type="text"
-                  placeholder="Type something amazing..."
-                  value={custom}
-                  onChange={(e) => handleCustom(e.target.value)}
-                  maxLength={50}
-                />
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Draw Mode */}
-        {mode === 'draw' && (
-          <div className="drawing-mode">
-            <DrawingCanvas
-              onSave={handleDrawingSave}
-              initialImage={drawing}
+          <div className="custom-section">
+            <p>— or create your own —</p>
+            <input
+              type="text"
+              placeholder="Type something amazing..."
+              value={custom}
+              onChange={(e) => handleCustom(e.target.value)}
+              maxLength={50}
             />
           </div>
         )}
-
-        {/* Capture Mode */}
-        {mode === 'capture' && (
-          <div className="capture-mode">
-            {cameraError ? (
-              <div className="camera-error">
-                <span className="error-icon">📷</span>
-                <p>{cameraError}</p>
-                <button className="btn btn-secondary" onClick={() => setMode('upload')}>
-                  Upload Instead
-                </button>
-              </div>
-            ) : drawing ? (
-              <div className="captured-preview">
-                <img src={drawing} alt="Captured" />
-                <button className="btn btn-secondary" onClick={() => { setDrawing(null); startCamera(); }}>
-                  📷 Retake
-                </button>
-              </div>
-            ) : (
-              <div className="camera-view">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="camera-feed"
-                />
-                <button className="btn btn-capture" onClick={capturePhoto}>
-                  📸 Snap!
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Upload Mode */}
-        {mode === 'upload' && (
-          <div className="upload-mode">
-            {drawing ? (
-              <div className="uploaded-preview">
-                <img src={drawing} alt="Uploaded" />
-                <button className="btn btn-secondary" onClick={() => setDrawing(null)}>
-                  🔄 Choose Different
-                </button>
-              </div>
-            ) : (
-              <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-                <span className="upload-icon">📁</span>
-                <p>Tap to choose a picture</p>
-                <span className="upload-hint">from your gallery</span>
-              </div>
-            )}
-          </div>
-        )}
       </div>
-
-      <button
+      
+      <button 
         className={`btn btn-hero ${canGo ? '' : 'disabled'}`}
         onClick={handleGo}
         disabled={!canGo}
       >
         <span className="btn-icon">{canGo ? '⚡' : '🔒'}</span>
-        <span>{getButtonText()}</span>
+        <span>{canGo ? "Lock It In!" : "Pick something first!"}</span>
       </button>
     </div>
   );
 };
 
-
-
 // Story Forge Screen
 const StoryForgeScreen = ({
   choices,
-  drawings,
   adventure,
   onComplete,
-  onBack,
-  onHome
+  onBack
 }) => {
   const [paragraphs, setParagraphs] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [showResults, setShowResults] = useState(false);
   const [powerUp, setPowerUp] = useState(null);
   const [powerUpIndex, setPowerUpIndex] = useState(null);
   const [isReading, setIsReading] = useState(false);
-
-  const getText = useCallback((questId) => {
+  
+  useEffect(() => {
+    generateStarters();
+  }, [choices]);
+  
+  const getText = (questId) => {
     const choice = choices[questId];
     if (!choice) return '';
-
-    // Handle new format { type: 'text' | 'drawing', value/data: ... }
-    if (choice.type === 'drawing') {
-      // For drawings, return a placeholder description
-      const questNames = {
-        hero: 'your amazing hero',
-        world: 'a magical place',
-        trouble: 'Something dangerous appeared',
-        victory: 'The hero found a way',
-        ending: 'everything turned out great'
-      };
-      return questNames[questId] || 'something magical';
-    }
-
-    if (choice.type === 'text') {
-      const val = choice.value;
-      if (typeof val === 'string' && !val.includes('_')) return val;
-      const quest = QUESTS.find(q => q.id === questId);
-      const opt = quest?.options.find(o => o.id === val);
-      return opt?.label || val || '';
-    }
-
-    // Legacy format support
     if (typeof choice === 'string') return choice;
     const quest = QUESTS.find(q => q.id === questId);
     const opt = quest?.options.find(o => o.id === choice);
     return opt?.label || '';
-  }, [choices]);
-
-  // Helper to construct natural sentences
-  const join = (parts) => parts.filter(p => p).join(' ');
-
-  useEffect(() => {
+  };
+  
+  const generateStarters = () => {
     const hero = getText('hero');
     const world = getText('world');
     const trouble = getText('trouble');
     const victory = getText('victory');
     const ending = getText('ending');
-
-    // --- Story Templates based on Adventure Mode ---
-
-    // 1. INTRO (The Legend Begins)
-    const getIntro = () => {
-      if (adventure === ADVENTURES.APPRENTICE) {
-        return `Once upon a time, a brave ${hero} lived in ${world}. It was a place full of magic and wonder.`;
-      }
-      // Explorer & Legend
-      const intros = [
-        `In a distant land known only in legends, a courageous ${hero} made their home in ${world}. The air shimmered with ancient magic.`,
-        `Long ago, in the heart of ${world}, there lived a famous ${hero} whose name was known across the realm.`,
-        `The chronicles of time tell of a mighty ${hero} who guarded the secrets of ${world}.`
-      ];
-      return intros[Math.floor(Math.random() * intros.length)];
-    };
-
-    // 2. PLOT (The Conflict & Action)
-    const getPlot = () => {
-      if (adventure === ADVENTURES.APPRENTICE) {
-        return `One day, something scary happened! ${trouble} But the hero was ready. They decided to ${victory.toLowerCase()}!`;
-      }
-      // Explorer & Legend
-      const connectives = ["Suddenly,", "Without warning,", "But shadows gathered because"];
-      const conn = connectives[Math.floor(Math.random() * connectives.length)];
-
-      return `${conn} ${trouble} The world held its breath. Undeterred, the ${hero} summoned their courage to ${victory.toLowerCase()}.`;
-    };
-
-    // 3. ENDING (Resolution)
-    const getClimax = () => {
-      if (adventure === ADVENTURES.APPRENTICE) {
-        return `It worked perfectly! ${ending} everyone was happy. The End.`;
-      }
-      // Explorer & Legend
-      return `Against all odds, their plan succeeded! ${ending} And so, a new legend was written in the stars. The End.`;
-    };
-
-    // Use new epic generator
-    setParagraphs(generateEpicStory(choices, adventure));
-    setQuestions(generateComprehension(choices));
-  }, [choices, adventure]);
-
+    
+    setParagraphs([
+      `Once upon a time, ${hero.toLowerCase().replace('a ', '')} lived ${world.toLowerCase()}.`,
+      `One day, something terrible happened! ${trouble}`,
+      `But the hero was brave. ${victory}`,
+      `And so, ${ending.toLowerCase()}`,
+      `The End.`
+    ]);
+  };
+  
   const handleChange = (i, text) => {
     const updated = [...paragraphs];
     updated[i] = text;
     setParagraphs(updated);
     checkPowerUp(text, i);
   };
-
+  
   const checkPowerUp = (text, i) => {
     const words = text.toLowerCase().split(/\s+/);
     for (const w of words) {
@@ -1198,7 +642,7 @@ const StoryForgeScreen = ({
       setPowerUpIndex(null);
     }
   };
-
+  
   const applyPowerUp = (original, replacement) => {
     const updated = [...paragraphs];
     const regex = new RegExp(`\\b${original}\\b`, 'gi');
@@ -1207,16 +651,10 @@ const StoryForgeScreen = ({
     setPowerUp(null);
     setPowerUpIndex(null);
   };
-
+  
   const handleReadAloud = () => {
-    // Check if SpeechSynthesis API is available
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      console.warn('Speech synthesis not available in this browser');
-      return;
-    }
-
     if (isReading) {
-      window.speechSynthesis.cancel();
+      speechSynthesis.cancel();
       setIsReading(false);
       return;
     }
@@ -1225,24 +663,22 @@ const StoryForgeScreen = ({
     utterance.rate = 0.85;
     utterance.pitch = 1.1;
     utterance.onend = () => setIsReading(false);
-    utterance.onerror = () => setIsReading(false);
     setIsReading(true);
-    window.speechSynthesis.speak(utterance);
+    speechSynthesis.speak(utterance);
   };
-
+  
   return (
     <div className="screen forge-screen">
       <div className="forge-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
         <button className="btn-back" onClick={onBack}>← Map</button>
         <h2 className="screen-title">⚒️ Story Forge</h2>
         <button className={`btn-tool ${isReading ? 'active' : ''}`} onClick={handleReadAloud}>
           {isReading ? '⏹️ Stop' : '🔊 Hear It'}
         </button>
       </div>
-
+      
       <p className="forge-narrative">{GAME_CONFIG.narrativeHooks.storyForge}</p>
-
+      
       <div className="forge-content">
         <div className="paragraphs">
           {paragraphs.map((p, i) => (
@@ -1252,7 +688,7 @@ const StoryForgeScreen = ({
                 value={p}
                 onChange={(e) => handleChange(i, e.target.value)}
               />
-
+              
               {powerUpIndex === i && powerUp && (
                 <div className="powerup-box">
                   <div className="powerup-header">
@@ -1270,7 +706,7 @@ const StoryForgeScreen = ({
             </div>
           ))}
         </div>
-
+        
         <div className="forge-sidebar">
           <h3>📜 Your Story</h3>
           <div className="summary-list">
@@ -1284,60 +720,11 @@ const StoryForgeScreen = ({
           </div>
         </div>
       </div>
-
-      <button className="btn-primary" onClick={() => onComplete(paragraphs)}>
-        Create Story Book! 📖
+      
+      <button className="btn btn-hero glow" onClick={() => onComplete(paragraphs)}>
+        <span className="btn-icon">✨</span>
+        <span>Bring My Story to Life!</span>
       </button>
-
-      {/* COMPREHENSION SECTION */}
-      <div className="comprehension-section" style={{ marginTop: '40px', padding: '20px', background: '#fff', borderRadius: '15px', border: '2px solid #ddd' }}>
-        <h2 style={{ color: '#2c3e50', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>🧠 Reading Comprehension</h2>
-
-        {questions.map((q) => (
-          <div key={q.id} className="question-box" style={{ marginBottom: '20px', textAlign: 'left' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '18px' }}>{q.id}. {q.question}</p>
-
-            {q.type === 'mcq' || q.type === 'vocab' || q.type === 'fill-blank' ? (
-              <div className="options" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-                {q.options.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setAnswers({ ...answers, [q.id]: opt })}
-                    style={{
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #ccc',
-                      background: answers[q.id] === opt ? '#dcfce7' : '#f8f9fa',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <textarea
-                placeholder="Type your answer here..."
-                style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
-              />
-            )}
-
-            {showResults && (
-              <div style={{ marginTop: '10px', color: answers[q.id] === q.correctAnswer ? 'green' : 'red' }}>
-                {answers[q.id] === q.correctAnswer ? '✅ Correct!' : `❌ Correct answer: ${q.correctAnswer}`}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <button
-          className="btn-secondary"
-          onClick={() => setShowResults(!showResults)}
-          style={{ marginTop: '20px', width: '100%', padding: '15px' }}
-        >
-          {showResults ? 'Hide Answers' : 'Check Answers ✅'}
-        </button>
-      </div>
     </div>
   );
 };
@@ -1345,14 +732,14 @@ const StoryForgeScreen = ({
 // Story Loading Screen (Dramatic!)
 const StoryLoadingScreen = () => {
   const [msgIndex, setMsgIndex] = useState(0);
-
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setMsgIndex(i => (i + 1) % GAME_CONFIG.loadingMessages.length);
     }, 1800);
     return () => clearInterval(interval);
   }, []);
-
+  
   return (
     <div className="screen loading-screen">
       <div className="loading-content">
@@ -1361,13 +748,13 @@ const StoryLoadingScreen = () => {
           <div className="circle-ring ring2"></div>
           <span className="circle-icon">📖</span>
         </div>
-
+        
         <p className="loading-msg">{GAME_CONFIG.loadingMessages[msgIndex]}</p>
-
+        
         <div className="loading-bar">
           <div className="loading-fill"></div>
         </div>
-
+        
         <p className="loading-sub">Something magical is happening...</p>
       </div>
     </div>
@@ -1375,19 +762,16 @@ const StoryLoadingScreen = () => {
 };
 
 // Story Theater Screen
-const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome }) => {
+const StoryTheaterScreen = ({ story, onChallenge, onBack }) => {
   const [part, setPart] = useState(0);
   const [isReading, setIsReading] = useState(false);
   const [showReveal, setShowReveal] = useState(true);
-
-  // Map story sections to quest IDs for drawings
-  const sectionToQuest = ['hero', 'world', 'trouble', 'victory', 'ending'];
-
+  
   useEffect(() => {
     const timer = setTimeout(() => setShowReveal(false), 2000);
     return () => clearTimeout(timer);
   }, []);
-
+  
   if (!story?.sections) {
     return (
       <div className="screen theater-screen">
@@ -1396,24 +780,14 @@ const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome 
       </div>
     );
   }
-
+  
   const section = story.sections[part];
   const isLast = part === story.sections.length - 1;
   const isFirst = part === 0;
-
-  // Get drawing for current section
-  const questId = sectionToQuest[part];
-  const currentDrawing = drawings[questId];
-
+  
   const handleRead = () => {
-    // Check if SpeechSynthesis API is available
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      console.warn('Speech synthesis not available in this browser');
-      return;
-    }
-
     if (isReading) {
-      window.speechSynthesis.cancel();
+      speechSynthesis.cancel();
       setIsReading(false);
       return;
     }
@@ -1421,11 +795,10 @@ const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.85;
     utterance.onend = () => setIsReading(false);
-    utterance.onerror = () => setIsReading(false);
     setIsReading(true);
-    window.speechSynthesis.speak(utterance);
+    speechSynthesis.speak(utterance);
   };
-
+  
   return (
     <div className="screen theater-screen">
       {showReveal && (
@@ -1434,15 +807,14 @@ const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome 
           <h2>Your Story Awakens!</h2>
         </div>
       )}
-
+      
       <div className="theater-header">
-        <button className="btn-home" onClick={onHome}>🏠 Home</button>
         <h1 className="story-title">{story.title}</h1>
         <button className={`btn-tool ${isReading ? 'active' : ''}`} onClick={handleRead}>
           {isReading ? '⏹️' : '🔊'}
         </button>
       </div>
-
+      
       <div className="theater-progress">
         {story.sections.map((_, i) => (
           <span key={i} className={`gem ${i === part ? 'active' : ''} ${i < part ? 'done' : ''}`}>
@@ -1450,33 +822,23 @@ const StoryTheaterScreen = ({ story, drawings = {}, onChallenge, onBack, onHome 
           </span>
         ))}
       </div>
-
+      
       <div className="theater-stage">
         <span className="part-label">Part {part + 1}</span>
         <h2 className="part-title">{section.heading}</h2>
-
-        {/* Show drawing if available */}
-        {currentDrawing ? (
-          <div className="story-drawing">
-            <img src={currentDrawing} alt={`Drawing for ${section.heading}`} />
-            <span className="drawing-label">🎨 Your artwork!</span>
-          </div>
-        ) : (
-          <span className="part-illustration">{section.illustration}</span>
-        )}
-
         <p className="part-text">{section.text}</p>
+        <span className="part-illustration">{section.illustration}</span>
       </div>
-
+      
       <div className="theater-nav">
-        <button
-          className="btn btn-secondary"
+        <button 
+          className="btn btn-secondary" 
           onClick={() => setPart(p => p - 1)}
           disabled={isFirst}
         >
           ← Back
         </button>
-
+        
         {isLast ? (
           <button className="btn btn-hero glow" onClick={onChallenge}>
             <span className="btn-icon">⚔️</span>
@@ -1499,7 +861,7 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
   const [selected, setSelected] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-
+  
   if (!challenges?.length) {
     return (
       <div className="screen arena-screen">
@@ -1507,23 +869,23 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
       </div>
     );
   }
-
+  
   const challenge = challenges[current];
   const isLast = current === challenges.length - 1;
   const isCorrect = selected === challenge.correctAnswer;
-
+  
   const handleAnswer = (ans) => {
     if (showResult) return;
     setSelected(ans);
     setShowResult(true);
     setAnswers({ ...answers, [current]: ans });
-
+    
     if (ans === challenge.correctAnswer) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 1500);
     }
   };
-
+  
   const handleNext = () => {
     if (isLast) {
       const score = Object.entries({ ...answers, [current]: selected }).filter(
@@ -1536,7 +898,7 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
       setSelected(null);
     }
   };
-
+  
   const renderPrompt = () => {
     if (challenge.type === 'synonym') {
       return (
@@ -1575,20 +937,20 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
     }
     return <p className="challenge-text">{challenge.question}</p>;
   };
-
+  
   return (
     <div className="screen arena-screen">
       <ConfettiBurst active={showConfetti} />
-
+      
       <div className="arena-header">
         <h2 className="screen-title">⚔️ Challenge Arena</h2>
         <div className="arena-progress">
           {challenges.map((_, i) => (
-            <span
-              key={i}
+            <span 
+              key={i} 
               className={`dot ${i === current ? 'current' : ''} ${i < current ? 'done' : ''}`}
               style={{
-                background: i < current
+                background: i < current 
                   ? (answers[i] === challenges[i].correctAnswer ? '#4ECDC4' : '#FF6B6B')
                   : undefined
               }}
@@ -1597,15 +959,15 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
         </div>
         <span className="arena-count">Challenge {current + 1} of {challenges.length}</span>
       </div>
-
+      
       <div className="arena-card">
         <div className="challenge-prompt">{renderPrompt()}</div>
-
+        
         <div className="challenge-options">
           {challenge.options.map((opt, i) => {
             const isSel = selected === opt;
             const isRight = opt === challenge.correctAnswer;
-
+            
             return (
               <button
                 key={i}
@@ -1621,7 +983,7 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
             );
           })}
         </div>
-
+        
         {showResult && (
           <div className={`result-box ${isCorrect ? 'success' : 'try'}`}>
             <span className="result-icon">{isCorrect ? '🎉' : '💪'}</span>
@@ -1633,7 +995,7 @@ const ChallengeArenaScreen = ({ challenges, onComplete }) => {
           </div>
         )}
       </div>
-
+      
       {showResult && (
         <button className="btn btn-hero" onClick={handleNext}>
           <span className="btn-icon">{isLast ? '🏆' : '⚡'}</span>
@@ -1651,9 +1013,9 @@ const CrystalScreen = ({ onComplete }) => {
     dragon: '',
     next: ''
   });
-
+  
   const canGo = responses.power || responses.dragon || responses.next;
-
+  
   return (
     <div className="screen crystal-screen">
       <div className="crystal-header">
@@ -1661,9 +1023,9 @@ const CrystalScreen = ({ onComplete }) => {
         <h2 className="screen-title">Crystal of Wisdom</h2>
         <p className="crystal-sub">{GAME_CONFIG.narrativeHooks.crystal}</p>
       </div>
-
+      
       <StoryGuide mood="mysterious" size="small" message="Gaze into the crystal..." />
-
+      
       <div className="crystal-card">
         <div className="crystal-q">
           <span className="q-icon">⭐</span>
@@ -1674,7 +1036,7 @@ const CrystalScreen = ({ onComplete }) => {
             onChange={(e) => setResponses({ ...responses, power: e.target.value })}
           />
         </div>
-
+        
         <div className="crystal-q">
           <span className="q-icon">🐉</span>
           <label>What dragon did you have to fight?</label>
@@ -1684,7 +1046,7 @@ const CrystalScreen = ({ onComplete }) => {
             onChange={(e) => setResponses({ ...responses, dragon: e.target.value })}
           />
         </div>
-
+        
         <div className="crystal-q">
           <span className="q-icon">🚀</span>
           <label>What new power will you unlock next time?</label>
@@ -1695,8 +1057,8 @@ const CrystalScreen = ({ onComplete }) => {
           />
         </div>
       </div>
-
-      <button
+      
+      <button 
         className={`btn btn-hero glow ${canGo ? '' : 'disabled'}`}
         onClick={() => onComplete(responses)}
         disabled={!canGo}
@@ -1712,12 +1074,12 @@ const CrystalScreen = ({ onComplete }) => {
 const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) => {
   const pct = Math.round((score / total) * 100);
   const [showConfetti, setShowConfetti] = useState(true);
-
+  
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 4000);
     return () => clearTimeout(timer);
   }, []);
-
+  
   let title, emoji, mood;
   if (pct >= 80) {
     title = "LEGENDARY HERO!";
@@ -1732,21 +1094,21 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
     emoji = "🌟";
     mood = "excited";
   }
-
+  
   const stars = pct >= 80 ? 3 : pct >= 50 ? 2 : 1;
-
+  
   return (
     <div className="screen victory-screen">
       <ConfettiBurst active={showConfetti} />
-
+      
       <div className="victory-content">
         <div className="victory-banner">
           <span className="victory-emoji">{emoji}</span>
           <h1 className="victory-title">{title}</h1>
         </div>
-
+        
         <StoryGuide mood={mood} size="large" />
-
+        
         <div className="score-area">
           <div className="score-ring">
             <span className="score-num">{score}</span>
@@ -1759,7 +1121,7 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
             ))}
           </div>
         </div>
-
+        
         <div className="badges-earned">
           <h3>🏆 Badges Earned</h3>
           <div className="badges-row">
@@ -1774,7 +1136,7 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
             ))}
           </div>
         </div>
-
+        
         {reflection && (reflection.power || reflection.dragon || reflection.next) && (
           <div className="wisdom-box">
             <h4>🔮 Crystal Wisdom</h4>
@@ -1783,7 +1145,7 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
             {reflection.next && <p><strong>Next Quest:</strong> {reflection.next}</p>}
           </div>
         )}
-
+        
         <div className="victory-actions">
           <button className="btn btn-secondary" onClick={onReplay}>
             🔄 Play Again
@@ -1801,7 +1163,7 @@ const VictoryScreen = ({ score, total, badges, reflection, onReplay, onNew }) =>
 // Story Generator
 const generateStory = async (choices) => {
   await new Promise(r => setTimeout(r, 3000));
-
+  
   const getText = (id) => {
     const choice = choices[id];
     if (!choice) return '';
@@ -1810,13 +1172,13 @@ const generateStory = async (choices) => {
     const opt = quest?.options.find(o => o.id === choice);
     return opt?.label || '';
   };
-
+  
   const hero = getText('hero');
   const world = getText('world');
   const trouble = getText('trouble');
   const victory = getText('victory');
   const ending = getText('ending');
-
+  
   return {
     title: "The Epic Adventure",
     sections: [
@@ -1899,39 +1261,39 @@ export default function StoryQuestApp() {
   const [score, setScore] = useState({ score: 0, total: 0 });
   const [answers, setAnswers] = useState({});
   const [reflection, setReflection] = useState(null);
-
+  
   const handleStart = () => setScreen(SCREENS.ADVENTURE_SELECT);
-
+  
   const handleAdventure = (adv) => {
     setAdventure(adv);
     setScreen(SCREENS.QUEST_MAP);
   };
-
+  
   const handleSelectQuest = (i) => {
     setCurrentQuest(i);
     setScreen(SCREENS.QUEST_ACTIVE);
   };
-
+  
   const handleQuestComplete = (id, choice, index) => {
     setChoices({ ...choices, [id]: choice });
-
+    
     if (!completed.includes(id)) {
       setCompleted([...completed, id]);
       setBadges([...badges, id]);
     }
-
+    
     if (index < QUESTS.length - 1) {
       setCurrentQuest(index + 1);
     } else {
       setScreen(SCREENS.QUEST_MAP);
     }
   };
-
+  
   const handleStartStory = () => setScreen(SCREENS.STORY_FORGE);
-
+  
   const handleForgeComplete = async (paragraphs) => {
     setScreen(SCREENS.STORY_LOADING);
-
+    
     try {
       const generated = await generateStory(choices);
       generated.sections = generated.sections.map((s, i) => ({
@@ -1945,25 +1307,25 @@ export default function StoryQuestApp() {
       setScreen(SCREENS.QUEST_MAP);
     }
   };
-
+  
   const handleChallenge = () => {
     setAnswers({});
     setScreen(SCREENS.CHALLENGE_ARENA);
   };
-
+  
   const handleChallengeComplete = (s, t, ans) => {
     setScore({ score: s, total: t });
     setAnswers(ans);
     setScreen(SCREENS.CRYSTAL);
   };
-
+  
   const handleCrystalComplete = (r) => {
     setReflection(r);
     setScreen(SCREENS.VICTORY);
   };
-
+  
   const handleReplay = () => setScreen(SCREENS.STORY_THEATER);
-
+  
   const handleNew = () => {
     setStory(null);
     setChoices({});
@@ -1974,10 +1336,9 @@ export default function StoryQuestApp() {
     setReflection(null);
     setScreen(SCREENS.ADVENTURE_SELECT);
   };
-
+  
   const goToMap = () => setScreen(SCREENS.QUEST_MAP);
-  const goHome = () => setScreen(SCREENS.WELCOME);
-
+  
   return (
     <div className="app">
       <style>{`
@@ -2357,29 +1718,6 @@ export default function StoryQuestApp() {
         
         .btn-back:hover {
           background: rgba(255,255,255,0.2);
-        }
-        
-        .btn-home {
-          position: fixed;
-          top: 20px;
-          left: 20px;
-          background: rgba(255,255,255,0.1);
-          border: 2px solid rgba(255,255,255,0.2);
-          color: white;
-          padding: 10px 18px;
-          border-radius: 30px;
-          font-weight: 700;
-          font-size: 14px;
-          cursor: pointer;
-          transition: all 0.3s;
-          z-index: 100;
-          backdrop-filter: blur(10px);
-        }
-        
-        .btn-home:hover {
-          background: rgba(255,107,107,0.3);
-          border-color: #FF6B6B;
-          transform: scale(1.05);
         }
         
         .btn-tool {
@@ -2907,297 +2245,6 @@ export default function StoryQuestApp() {
         .custom-section input:focus {
           outline: none;
           border-color: #4ECDC4;
-        }
-        
-        /* ===== MODE TOGGLE ===== */
-        .mode-toggle {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin: 20px 0;
-          background: rgba(0,0,0,0.2);
-          padding: 8px;
-          border-radius: 20px;
-        }
-        
-        .mode-tab {
-          padding: 14px 28px;
-          border: none;
-          border-radius: 16px;
-          background: transparent;
-          color: rgba(255,255,255,0.6);
-          font-family: 'Nunito', sans-serif;
-          font-weight: 700;
-          font-size: 16px;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        
-        .mode-tab:hover {
-          color: white;
-          background: rgba(255,255,255,0.1);
-        }
-        
-        .mode-tab.active {
-          background: linear-gradient(135deg, #4ECDC4, #45B7D1);
-          color: white;
-          box-shadow: 0 4px 20px rgba(78,205,196,0.4);
-        }
-        
-        /* ===== DRAWING CANVAS ===== */
-        .drawing-mode {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
-        }
-        
-        .drawing-canvas-container {
-          background: rgba(255,255,255,0.95);
-          border-radius: 25px;
-          padding: 20px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .drawing-toolbar {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          margin-bottom: 15px;
-          flex-wrap: wrap;
-        }
-        
-        .tool-group {
-          display: flex;
-          gap: 6px;
-          background: rgba(0,0,0,0.08);
-          padding: 8px 12px;
-          border-radius: 15px;
-        }
-        
-        .color-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: 3px solid transparent;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .color-btn:hover {
-          transform: scale(1.15);
-        }
-        
-        .color-btn.active {
-          border-color: #1a1a3a;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          transform: scale(1.1);
-        }
-        
-        .size-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          border: 2px solid transparent;
-          background: white;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .size-btn:hover {
-          background: #f0f0f0;
-        }
-        
-        .size-btn.active {
-          border-color: #4ECDC4;
-          background: rgba(78,205,196,0.1);
-        }
-        
-        .tool-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          border: 2px solid transparent;
-          background: white;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .tool-btn:hover {
-          background: #f0f0f0;
-        }
-        
-        .tool-btn.active {
-          border-color: #FF6B6B;
-          background: rgba(255,107,107,0.15);
-        }
-        
-        .tool-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-        
-        .drawing-canvas {
-          border-radius: 15px;
-          cursor: crosshair;
-          display: block;
-          touch-action: none;
-          box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .drawing-hint {
-          text-align: center;
-          color: #666;
-          font-size: 14px;
-          margin-top: 10px;
-          font-weight: 600;
-        }
-        
-        /* ===== STORY DRAWING (Theater) ===== */
-        .story-drawing {
-          margin: 20px 0;
-          text-align: center;
-        }
-        
-        .story-drawing img {
-          max-width: 100%;
-          max-height: 300px;
-          border-radius: 20px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-          border: 4px solid rgba(255,255,255,0.2);
-        }
-        
-        .drawing-label {
-          display: block;
-          margin-top: 10px;
-          font-size: 14px;
-          color: rgba(255,255,255,0.7);
-          font-weight: 600;
-        }
-        
-        /* ===== CAPTURE MODE ===== */
-        .capture-mode {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
-        }
-        
-        .camera-view {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 15px;
-        }
-        
-        .camera-feed {
-          width: 320px;
-          height: 280px;
-          border-radius: 20px;
-          background: #000;
-          object-fit: cover;
-          box-shadow: 0 15px 50px rgba(0,0,0,0.4);
-        }
-        
-        .btn-capture {
-          background: linear-gradient(135deg, #FF6B6B, #FF8C42);
-          color: white;
-          padding: 15px 40px;
-          border: none;
-          border-radius: 30px;
-          font-size: 20px;
-          font-weight: 800;
-          cursor: pointer;
-          transition: all 0.3s;
-          box-shadow: 0 8px 25px rgba(255,107,107,0.4);
-        }
-        
-        .btn-capture:hover {
-          transform: scale(1.05);
-          box-shadow: 0 12px 35px rgba(255,107,107,0.5);
-        }
-        
-        .camera-error {
-          text-align: center;
-          padding: 40px;
-          background: rgba(255,255,255,0.06);
-          border-radius: 25px;
-        }
-        
-        .error-icon {
-          font-size: 60px;
-          display: block;
-          margin-bottom: 15px;
-          opacity: 0.5;
-        }
-        
-        .camera-error p {
-          color: rgba(255,255,255,0.7);
-          margin-bottom: 20px;
-        }
-        
-        .captured-preview, .uploaded-preview {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 15px;
-        }
-        
-        .captured-preview img, .uploaded-preview img {
-          width: 320px;
-          height: 280px;
-          border-radius: 20px;
-          object-fit: contain;
-          background: white;
-          box-shadow: 0 15px 50px rgba(0,0,0,0.4);
-        }
-        
-        /* ===== UPLOAD MODE ===== */
-        .upload-mode {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
-        }
-        
-        .upload-area {
-          width: 320px;
-          height: 280px;
-          border: 4px dashed rgba(255,255,255,0.3);
-          border-radius: 25px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s;
-          background: rgba(255,255,255,0.05);
-        }
-        
-        .upload-area:hover {
-          border-color: #4ECDC4;
-          background: rgba(78,205,196,0.1);
-        }
-        
-        .upload-icon {
-          font-size: 70px;
-          margin-bottom: 15px;
-        }
-        
-        .upload-area p {
-          font-size: 18px;
-          font-weight: 700;
-          color: white;
-          margin-bottom: 5px;
-        }
-        
-        .upload-hint {
-          font-size: 14px;
-          color: rgba(255,255,255,0.5);
         }
         
         /* ===== STORY FORGE ===== */
@@ -4071,295 +3118,17 @@ export default function StoryQuestApp() {
             grid-template-columns: 1fr;
           }
         }
-        
-        /* ===== SMALL MOBILE (480px and below) ===== */
-        @media (max-width: 480px) {
-          /* Base Layout */
-          .screen {
-            padding: 15px;
-            padding-top: 60px; /* Space for fixed home button */
-          }
-          
-          /* Home Button - Fixed for mobile */
-          .btn-home {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding: 10px 14px;
-            font-size: 14px;
-            min-height: 44px;
-            min-width: 44px;
-          }
-          
-          /* Typography */
-          .game-title {
-            font-size: 36px;
-            letter-spacing: 2px;
-          }
-          
-          .screen-title {
-            font-size: 24px;
-          }
-          
-          .subtitle {
-            font-size: 16px;
-          }
-          
-          /* Adventure Cards */
-          .adventure-card {
-            padding: 20px 15px;
-            min-height: auto;
-          }
-          
-          .card-title {
-            font-size: 20px;
-          }
-          
-          .card-icon-wrapper {
-            width: 60px;
-            height: 60px;
-          }
-          
-          .card-icon {
-            font-size: 28px;
-          }
-          
-          /* Quest Trail - Vertical on mobile */
-          .quest-trail {
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            max-width: 100%;
-            overflow-x: hidden;
-          }
-          
-          .quest-node {
-            width: 100%;
-            max-width: 280px;
-            padding: 15px;
-            flex-direction: row;
-            gap: 12px;
-          }
-          
-          .node-icon {
-            font-size: 28px;
-          }
-          
-          .node-label {
-            font-size: 13px;
-          }
-          
-          /* Mode Toggle Tabs - Stack vertically */
-          .mode-toggle {
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-          }
-          
-          .mode-tab {
-            width: 100%;
-            padding: 14px;
-            font-size: 14px;
-            min-height: 44px;
-          }
-          
-          /* Options Grid - Single column */
-          .options-grid {
-            grid-template-columns: 1fr;
-            gap: 10px;
-          }
-          
-          .option-card {
-            padding: 15px;
-            min-height: 44px;
-          }
-          
-          /* Quest Top Bar */
-          .quest-top-bar {
-            flex-wrap: wrap;
-            gap: 8px;
-            padding-top: 45px;
-          }
-          
-          .btn-back {
-            min-height: 44px;
-            padding: 10px 16px;
-          }
-          
-          /* Drawing Canvas */
-          .drawing-canvas-container {
-            max-width: 100%;
-            overflow: hidden;
-          }
-          
-          .drawing-canvas-container canvas {
-            max-width: 100% !important;
-            height: auto !important;
-          }
-          
-          .canvas-toolbar {
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-          }
-          
-          .canvas-toolbar button {
-            min-width: 44px;
-            min-height: 44px;
-            padding: 10px;
-          }
-          
-          .color-picker {
-            flex-wrap: wrap;
-            gap: 6px;
-          }
-          
-          .color-swatch {
-            min-width: 36px;
-            min-height: 36px;
-          }
-          
-          /* Buttons - Touch-friendly */
-          .btn {
-            padding: 14px 24px;
-            font-size: 16px;
-            min-height: 48px;
-            width: 100%;
-            max-width: 320px;
-          }
-          
-          .btn-hero {
-            padding: 16px 28px;
-            font-size: 18px;
-          }
-          
-          /* Inputs - Prevent iOS zoom */
-          input[type="text"],
-          textarea {
-            font-size: 16px !important;
-            min-height: 44px;
-          }
-          
-          /* Map Header */
-          .map-header {
-            flex-direction: column;
-            gap: 10px;
-            text-align: center;
-            padding-top: 50px;
-          }
-          
-          .progress-bar {
-            width: 100%;
-            max-width: 200px;
-          }
-          
-          /* Badges Section */
-          .badge-row {
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-          }
-          
-          .badge-item {
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-          }
-          
-          /* Forge Header */
-          .forge-header {
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            padding-top: 50px;
-          }
-          
-          /* Theater */
-          .theater-header {
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-top: 50px;
-          }
-          
-          .story-title {
-            font-size: 24px;
-            text-align: center;
-            width: 100%;
-          }
-          
-          .story-card {
-            padding: 20px 15px;
-          }
-          
-          .story-text {
-            font-size: 16px;
-            line-height: 1.6;
-          }
-          
-          /* Victory Screen */
-          .victory-title {
-            font-size: 32px;
-          }
-          
-          .score-num {
-            font-size: 40px;
-          }
-          
-          .victory-actions {
-            flex-direction: column;
-            align-items: center;
-          }
-          
-          /* Story Guide */
-          .story-guide {
-            max-width: 100%;
-          }
-          
-          .speech-bubble {
-            font-size: 14px;
-            padding: 12px 16px;
-            max-width: calc(100vw - 100px);
-          }
-          
-          /* Floating Elements - Hide on mobile */
-          .floating-elements {
-            display: none;
-          }
-        }
-        
-        /* Touch device improvements */
-        @media (hover: none) and (pointer: coarse) {
-          .btn:active,
-          .option-card:active,
-          .adventure-card:active,
-          .quest-node:active,
-          .mode-tab:active {
-            transform: scale(0.97);
-            opacity: 0.9;
-          }
-          
-          /* Disable hover effects on touch */
-          .btn:hover,
-          .adventure-card:hover,
-          .quest-node:hover {
-            transform: none;
-          }
-        }
       `}</style>
-
+      
       {screen === SCREENS.WELCOME && <WelcomeScreen onStart={handleStart} />}
-      {screen === SCREENS.ADVENTURE_SELECT && <AdventureSelectScreen onSelect={handleAdventure} onHome={goHome} />}
+      {screen === SCREENS.ADVENTURE_SELECT && <AdventureSelectScreen onSelect={handleAdventure} />}
       {screen === SCREENS.QUEST_MAP && (
         <QuestMapScreen
           completed={completed}
           current={currentQuest}
           badges={badges}
-          adventure={adventure}
           onSelectQuest={handleSelectQuest}
           onStartStory={handleStartStory}
-          onHome={goHome}
         />
       )}
       {screen === SCREENS.QUEST_ACTIVE && (
@@ -4370,35 +3139,22 @@ export default function StoryQuestApp() {
           selection={choices[QUESTS[currentQuest]?.id]}
           onComplete={handleQuestComplete}
           onBack={goToMap}
-          onHome={goHome}
         />
       )}
       {screen === SCREENS.STORY_FORGE && (
         <StoryForgeScreen
           choices={choices}
-          drawings={Object.fromEntries(
-            Object.entries(choices)
-              .filter(([_, v]) => v?.type === 'drawing')
-              .map(([k, v]) => [k, v.data])
-          )}
           adventure={adventure}
           onComplete={handleForgeComplete}
           onBack={goToMap}
-          onHome={goHome}
         />
       )}
       {screen === SCREENS.STORY_LOADING && <StoryLoadingScreen />}
       {screen === SCREENS.STORY_THEATER && (
         <StoryTheaterScreen
           story={story}
-          drawings={Object.fromEntries(
-            Object.entries(choices)
-              .filter(([_, v]) => v?.type === 'drawing')
-              .map(([k, v]) => [k, v.data])
-          )}
           onChallenge={handleChallenge}
           onBack={goToMap}
-          onHome={goHome}
         />
       )}
       {screen === SCREENS.CHALLENGE_ARENA && (
