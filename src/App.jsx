@@ -960,7 +960,7 @@ const QuestActiveScreen = ({
         {mode === 'describe' && (
           <>
             <div className="options-grid">
-              {quest.options.map(opt => (
+              {(adventure === ADVENTURES.APPRENTICE ? quest.options.slice(0, 3) : quest.options).map(opt => (
                 <button
                   key={opt.id}
                   className={`option-card ${selected === opt.id ? 'selected' : ''}`}
@@ -1096,7 +1096,7 @@ const StoryForgeScreen = ({
     const choice = choices[questId];
     if (!choice) return '';
 
-    // Handle new format { type: 'text' | 'drawing', value/data: ... }
+    // Handle new format {type: 'text' | 'drawing', value/data: ... }
     if (choice.type === 'drawing') {
       // For drawings, return a placeholder description
       const questNames = {
@@ -1173,7 +1173,7 @@ const StoryForgeScreen = ({
 
     // Use new epic generator
     setParagraphs(generateEpicStory(choices, adventure));
-    setQuestions(generateComprehension(choices));
+    setQuestions(generateComprehension(choices, adventure));
   }, [choices, adventure]);
 
   const handleChange = (i, text) => {
@@ -1981,9 +1981,10 @@ export default function StoryQuestApp() {
   const goHome = () => setScreen(SCREENS.WELCOME);
 
   return (
-    <div className="app">
+    <div className={`app theme-${adventure}`}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&family=Merriweather:wght@400;700&display=swap');
+
         
         *, *::before, *::after {
           margin: 0;
@@ -1992,12 +1993,27 @@ export default function StoryQuestApp() {
         }
         
         .app {
-          font-family: 'Nunito', sans-serif;
+          font-family: var(--font-main, 'Nunito', sans-serif);
           min-height: 100vh;
-          background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0f0f2f 100%);
+          background: var(--color-bg, linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0f0f2f 100%));
           background-attachment: fixed;
           color: white;
           overflow-x: hidden;
+        }
+
+        .theme-apprentice {
+          --font-main: 'Nunito', sans-serif;
+          --color-bg: linear-gradient(135deg, #2E3192 0%, #1BFFFF 100%);
+        }
+
+        .theme-explorer {
+          --font-main: 'Nunito', sans-serif;
+          --color-bg: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0f0f2f 100%);
+        }
+
+        .theme-legend {
+          --font-main: 'Merriweather', serif;
+          --color-bg: linear-gradient(135deg, #232526 0%, #414345 100%);
         }
         
         .screen {

@@ -1,10 +1,13 @@
 
 // ==========================================
 // 📜 EPIC STORY GENERATOR
-// Generates massive, 150+ sentence stories
+// Version 2.0 - Mode Specific Stories
 // ==========================================
 
 export const generateEpicStory = (choices, adventureMode) => {
+    const isApprentice = adventureMode === 'apprentice';
+    const isLegend = adventureMode === 'legend';
+
     const prettify = (str) => {
         if (!str) return '';
         return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -17,6 +20,13 @@ export const generateEpicStory = (choices, adventureMode) => {
         if (c.type === 'drawing') return 'the hero';
         const val = typeof c === 'string' ? c : (c.label || '');
         return prettify(val);
+    };
+
+    // Vocabulary Tier helper
+    const v = (simple, normal, fancy) => {
+        if (isApprentice) return simple;
+        if (isLegend) return fancy;
+        return normal;
     };
 
     const heroType = getVal('hero');
@@ -29,79 +39,48 @@ export const generateEpicStory = (choices, adventureMode) => {
     const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
     // ---------------------------------------------------------
-    // 📚 EXPANSION PACKS (Filler text to reach 150+ sentences)
+    // 📚 EXPANSION PACKS
     // ---------------------------------------------------------
 
     const weatherDescriptions = [
-        "The sun hung low in the sky, casting long shadows across the land.",
-        "A gentle breeze whispered through the trees, carrying secrets of old.",
-        "Clouds gathered on the horizon, painting the sky in shades of purple and gold.",
-        "The air was crisp and cool, filling their lungs with energy.",
-        "Birds sang melodies that seemed to guide the way forward.",
-        "The ground beneath was firm, a testament to the ancient earth.",
-        "Rays of sunlight pierced through the canopy, illuminating the dust motes dancing in the air.",
-        "It was a day that felt momentous, as if the world itself was holding its breath.",
-        "The smell of rain was distant but promising.",
-        "Nature seemed to be watching, silent and observant.",
-        "Far above, a hawk circled, its sharp eyes scanning the terrain.",
-        "The wind picked up, rustling the leaves like the pages of a history book.",
-        "Silence reigned, save for the rhythmic crunch of footsteps.",
-        "The atmosphere was thick with anticipation.",
-        "Every step felt like a destiny unfolding.",
-        "The sky was a canvas of infinite blue, stretching forever.",
-        "Dewdrops glistened on the grass like scattered diamonds.",
-        "The path ahead was winding, disappearing into the unknown.",
-        "Shadows played tricks on the eyes, lengthening and shortening with the passing clouds.",
-        "The world felt vast, ancient, and full of untold stories."
+        v("The sun was bright.", "The sun hung low in the sky, casting long shadows.", "The golden orb descended, dragging shadows across the ancient earth."),
+        v("A nice wind blew.", "A gentle breeze whispered through the trees.", "A spectral gale murmured secrets of forgotten lore through the canopy."),
+        v("Clouds looked cool.", "Clouds gathered on the horizon, painting the sky.", "Tempestuous clouds massed upon the horizon, a canvas of bruising purple."),
+        v("It was a good day.", "The air was crisp and cool.", "The atmosphere crackled with a portentous energy."),
+        v("Birds were singing.", "Birds sang melodies that guided the way.", "Avian choirs sang dirges that seemed to prophesy the path ahead."),
+        v("The ground was hard.", "The ground beneath was firm.", "The terra firma was unyielding, aged by eons of history."),
+        v("Sun light hit the trees.", "Rays of sunlight pierced through the canopy.", "Spears of luminescence pierced the verdant gloom."),
+        v("It felt like a big day.", "It was a day that felt momentous.", "The very epoch seemed to hold its breath in anticipation."),
+        v("Rain was coming.", "The smell of rain was distant but promising.", "The ozone scent of an approaching deluge hung heavy."),
+        v("Nature was quiet.", "Nature seemed to be watching.", "The natural world stood as a silent sentinel.")
     ];
 
     const travelDescriptions = [
-        "They walked for miles, observing the changing landscape.",
-        "The journey was long, but their spirit remained unbroken.",
-        "Over hills and through valleys they traveled.",
-        "Each step took them further from home and closer to destiny.",
-        "The road was rough, filled with stones and roots.",
-        "They paused only to drink from cool streams.",
-        "Wildlife scurried away as they approached.",
-        "The rhythm of walking became a meditation.",
-        "Hours turned into days as the quest continued.",
-        "They climbed steep ridges and descended into deep gorges.",
-        "The scenery shifted from lush green to rocky grey.",
-        "Fatigue set in, but determination pushed them onward.",
-        "They camped under the stars, watching the constellations wheel overhead.",
-        "Morning brought new light and renewed resolve.",
-        "The path was lonely, with few travelers to be seen.",
-        "Ancient ruins dotted the landscape, remnants of a forgotten time.",
-        "They crossed bridges made of old stone and weathered wood.",
-        "The sound of their own breathing was their constant companion.",
-        "They looked back only once, then fixed their eyes forward.",
-        "The destination was still far, but hope shortened the distance."
+        v("They walked a lot.", "They walked for miles, observing the landscape.", "They traversed leagues, surveying the shifting topography."),
+        v("It was a long trip.", "The journey was long, but their spirit remained.", "The odyssey was arduous, yet their resolve was indomitable."),
+        v("They went over hills.", "Over hills and through valleys they traveled.", "Before them lay an undulating sea of peaks and dales."),
+        v("They walked far.", "Each step took them further from home.", "Every stride severed them further from the sanctuary of origin."),
+        v("The road was bumpy.", "The road was rough, filled with stones.", "The path was treacherous, strewn with the detritus of ages."),
+        v("They drank water.", "They paused only to drink from cool streams.", "Respite was found only in the crystal waters of mountain rills."),
+        v("Animals ran away.", "Wildlife scurried away as they approached.", "Fauna fled before their encroaching presence."),
+        v("Walking was fun.", "The rhythm of walking became a meditation.", "The cadence of their march became a trance-like mantra."),
+        v("Days went by.", "Hours turned into days as the quest continued.", "Time blurred as the sun wheeled overhead in its eternal cycle."),
+        v("They climbed up.", "They climbed steep ridges.", "They ascended precipitous scarps that defied gravity.")
     ];
 
     const thoughtDescriptions = [
-        "The hero pondered the weight of their quest.",
-        "Doubts famously crept in, but were quickly banished.",
-        "Would they prevail? The question lingered in the mind.",
-        "Memories of home brought a warm comfort.",
-        "Focus was key; a single mistake could be the end.",
-        "They recalled the legends of old heroes.",
-        "What defines a true hero? Is it strength or heart?",
-        "The burden of the world felt heavy on their shoulders.",
-        "They visualized victory, holding the image clear.",
-        "Fear was present, but courage is acting despite fear.",
-        "They thought of the friends left behind.",
-        "A promise made is a promise that must be kept.",
-        "The unknown future is a blank page waiting to be written.",
-        "Instincts honed by years of training took over.",
-        "They analyzed every sound, every movement.",
-        "Strategy was just as important as strength.",
-        "The heart beats faster when destiny calls.",
-        "They whispered a silent prayer for luck.",
-        "Determination solidified into an iron will.",
-        "There was no turning back now."
+        v("The hero thought about the quest.", "The hero pondered the weight of their quest.", "The hero contemplated the gravity of their ordained burden."),
+        v("They felt brave.", "Doubts crept in, but were quickly banished.", "Insidious doubts whispered, yet were exiled by sheer will."),
+        v("Will they win?", "Would they prevail? The question lingered.", "Would victory be claimed? The query hung like mist."),
+        v("They missed home.", "Memories of home brought a warm comfort.", "Nostalgic visions of the hearth provided a fleeting solace."),
+        v("They stayed focused.", "Focus was key; a single mistake could be bad.", "Absolute concentration was paramount; error invited doom."),
+        v("They remembered stories.", "They recalled the legends of old heroes.", "They invoked the sagas of antediluvian champions."),
+        v("They felt strong.", "What defines a true hero? Strength or heart?", "Is heroism forged in sinew, or in the crucible of the soul?"),
+        v("The world was big.", "The burden of the world felt heavy.", "The atlas of the world rested ponderously upon them."),
+        v("They imagined winning.", "They visualized victory clearly.", "They manifested the triumph in their mind's eye."),
+        v("They were not scared.", "Fear was present, but courage is acting anyway.", "Fear was a constant specter, but valor is its master.")
     ];
 
-    // Function to generate a block of text (10 sentences)
     const generateBlock = (sourceArray, count = 10) => {
         let block = [];
         for (let i = 0; i < count; i++) {
@@ -111,241 +90,132 @@ export const generateEpicStory = (choices, adventureMode) => {
     };
 
     // ---------------------------------------------------------
-    // 📖 CHAPTER GENERATORS
+    // 📖 CHAPTERS
     // ---------------------------------------------------------
 
-    // CHAPTER 1: THE WORLD & HERO (Setup)
     const generateChapter1 = () => {
-        const intro = `In the annals of history, few tales shine as brightly as this one. It began in the realm of ${worldType}, a place of breathtaking beauty and ancient mystery.`;
-        const heroDesc = `Here lived a ${heroType}, known not just for their skill, but for their spirit. This hero was unlike any other. They woke every morning with a fire in their heart.`;
-        const filler1 = generateBlock(weatherDescriptions, 20);
-        const filler2 = generateBlock(thoughtDescriptions, 15);
-
-        return [
-            intro,
-            `The world of ${worldType} was vast. It had mountains that scraped the sky and rivers that sang. People spoke of magic in hushed tones.`,
-            filler1,
-            heroDesc,
-            `The ${heroType} was preparing for something, though they did not yet know what.`,
-            filler2,
-            `Life was peaceful, but peace is often the calm before the storm. The ${heroType} could feel a change in the wind.`,
-            "Every legend has a beginning, and this was theirs."
-        ].join(" ");
+        const intro = v(
+            `Once upon a time in ${worldType}, there was a hero.`,
+            `It began in the realm of ${worldType}, a place of beauty.`,
+            `In the annals of the ${worldType}, a prophecy stirred.`
+        );
+        const heroDesc = v(
+            `The ${heroType} was very brave and kind.`,
+            `Here lived a ${heroType}, known for their skill and spirit.`,
+            `A ${heroType} of peerless renown dwelt here, a paragon of might.`
+        );
+        const filler = generateBlock(weatherDescriptions, isApprentice ? 5 : 15);
+        return [intro, filler, heroDesc, v("They were ready.", "They were preparing for something.", "Destiny awaited.")].join(" ");
     };
 
-    // CHAPTER 2: THE CALL (Inciting Incident)
-    const generateChapter2 = () => {
-        const event = `One fateful day, the tranquility was shattered. Signs of ${troubleType} began to appear at the edges of the land.`;
-        const reaction = `The ${heroType} saw the signs. A shadow fell over the ${worldType}. It started small, a whisper in the dark.`;
-        const filler = generateBlock(weatherDescriptions, 20);
-        const decision = `They knew they could not stay idle. To do nothing was to accept defeat.`;
-
-        return [
-            event,
-            "Rumors spread through the villages. Elders looked worried. Children stopped playing.",
-            reaction,
-            filler,
-            "The choice was clear but difficult. Leave the safety of home or watch it fade?",
-            decision,
-            "The ${heroType} packed their gear. They took only what was needed.",
-            "Goodbyes were said in silence. Words were too heavy.",
-            "They stepped out the door and looked at the horizon.",
-            "The adventure had truly begun."
-        ].join(" ");
+    const generateChapter2 = () => { // The Call
+        const event = v(
+            `But then, ${troubleType} started causing trouble!`,
+            `One day, signs of ${troubleType} began to appear.`,
+            `The tranquility was shattered when the omen of ${troubleType} manifested.`
+        );
+        const filler = generateBlock(weatherDescriptions, isApprentice ? 5 : 15);
+        return [event, filler, v("Something had to be done.", "The hero knew they had to act.", "Action was the only recourse.")].join(" ");
     };
 
-    // CHAPTER 3: THE JOURNEY (Rising Action)
-    const generateChapter3 = () => {
-        const travel = `The road to face the ${troubleType} was treacherous. Leaving the familiar lands of ${worldType} required bravery.`;
-        const filler1 = generateBlock(travelDescriptions, 25);
-        const filler2 = generateBlock(weatherDescriptions, 15);
-
-        return [
-            travel,
-            "Miles turned into leagues. The landscape shifted and warped.",
-            filler1,
-            "At night, strange sounds filled the air.",
-            filler2,
-            "They encountered obstacles: a fallen tree, a rushing river, a steep cliff.",
-            "Each one was overcome with patience and skill.",
-            `The thought of the ${troubleType} loomed large, a dark cloud in the distance.`,
-            "But the ${heroType} pressed on. One foot in front of the other.",
-            "They were getting closer."
-        ].join(" ");
+    const generateChapter3 = () => { // The Journey
+        const travel = v(
+            `So the ${heroType} went on a trip.`,
+            `The road to face the ${troubleType} was long.`,
+            `The pilgrimage to confront the ${troubleType} was fraught with peril.`
+        );
+        const filler = generateBlock(travelDescriptions, isApprentice ? 8 : 20);
+        return [travel, filler, v("They walked a long way.", "They pressed on.", "They persevered against the odds.")].join(" ");
     };
 
-    // CHAPTER 4: THE CONFLICT (Climax Part 1)
-    const generateChapter4 = () => {
-        const confrontation = `Finally, they arrived at the heart of the darkness. The ${troubleType} revealed itself in all its terrifying glory.`;
-        const filler = generateBlock(thoughtDescriptions, 25);
-
-        return [
-            confrontation,
-            "The air grew cold. The ground shook.",
-            "It was a sight that would freeze a lesser soul.",
-            filler,
-            `The ${troubleType} roared, a sound that rattled the bones.`,
-            `The ${heroType} stood their ground. They did not flinch.`,
-            "The battle for the future of ${worldType} was about to begin.",
-            "Time seemed to slow down.",
-            "It was the moment of truth.",
-            "Steel met shadow. Will met force."
-        ].join(" ");
+    const generateChapter4 = () => { // The Conflict
+        const confrontation = v(
+            `They found the ${troubleType}.`,
+            `Finally, they arrived at the darkness of ${troubleType}.`,
+            `At the nadir of the world, they beheld the ${troubleType} in its horror.`
+        );
+        const filler = generateBlock(thoughtDescriptions, isApprentice ? 5 : 20);
+        return [confrontation, filler, v("It was scary.", "It was a moment of truth.", "The crucible of combat beckoned.")].join(" ");
     };
 
-    // CHAPTER 5: THE VICTORY (Climax Part 2)
-    const generateChapter5 = () => {
-        const action = `The ${heroType} remembered their plan. They decided to use ${victoryType}! It was a brilliant move.`;
-        const filler = generateBlock(weatherDescriptions, 15); // Weather changes as battle ends
-
-        return [
-            action,
-            "The tide of battle turned.",
-            `Using ${victoryType} was unexpected. The ${troubleType} faltered.`,
-            "Light began to pierce the darkness.",
-            filler,
-            "With one final effort, the hero pushed forward.",
-            "The darkness shattered like glass.",
-            "Silence returned to the land, but it was a peaceful silence.",
-            "The threat was gone.",
-            "They had done it. They had won."
-        ].join(" ");
+    const generateChapter5 = () => { // The Victory
+        const action = v(
+            `The hero used ${victoryType}! It worked!`,
+            `The ${heroType} decided to use ${victoryType}! Brilliant!`,
+            `With a strategem of genius, they unleashed ${victoryType}!`
+        );
+        return [action, v("They won!", "The threat was gone.", "The adversary was vanquished.")].join(" ");
     };
 
-    // CHAPTER 6: THE RESOLUTION (Ending & Moral)
-    const generateChapter6 = () => {
-        const resolve = `Peace returned to ${worldType}. The people cheered for the ${heroType}. ${endingType}`;
-        const filler = generateBlock(thoughtDescriptions, 10);
-
-        // Moral selection
-        const morals = [
-            "True courage is not the absence of fear, but acting in spite of it.",
-            "Even the smallest light can shine in the darkest night.",
-            "Friendship and determination can move mountains.",
-            "Wisdom is often stronger than the sharpest sword.",
-            "A hero lies within us all, waiting to be awakened."
-        ];
-        const moral = rand(morals);
-
-        return [
-            resolve,
-            "The journey back was lighter, full of joy.",
-            filler,
-            "The tale of this adventure would be sung for generations.",
-            `And so, the legend of the ${heroType} was etched into history.`,
-            "The world was safe once more.",
-            "They realized something important that day.",
-            `MORAL: ${moral}`,
-            "The End."
-        ].join(" ");
+    const generateChapter6 = () => { // Resolution
+        const resolve = v(
+            `Everyone was happy. The end.`,
+            `Peace returned to ${worldType}. ${endingType}`,
+            `Harmony was restored to the ${worldType}. ${endingType}`
+        );
+        const moral = rand([
+            v("Be brave!", "Courage is key.", "Valor is the shield of the just."),
+            v("Be nice.", "Kindness matters.", "Benevolence creates its own reward.")
+        ]);
+        return [resolve, `MORAL: ${moral}`].join(" ");
     };
 
     // ---------------------------------------------------------
     // 🚀 ASSEMBLY
     // ---------------------------------------------------------
-    if (adventureMode === 'explorer' || adventureMode === 'legend') {
+    if (isApprentice) {
+        return [generateChapter1(), generateChapter3(), generateChapter5()];
+    } else if (isLegend) {
+        // Detailed 6 chapters
         return [
-            generateChapter1(),
-            generateChapter2(),
-            generateChapter3(),
-            generateChapter4(),
-            generateChapter5(),
-            generateChapter6()
+            generateChapter1(), generateChapter2(), generateChapter3(),
+            generateChapter4(), generateChapter5(), generateChapter6()
         ];
     } else {
-        // Keep apprentice mode simpler (but still creative)
+        // Explorer (Standard 5 chapters)
         return [
-            generateChapter1(),
-            generateChapter3(), // Skip detailed departure
-            generateChapter5(), // Skip conflict detail
-            generateChapter6()
+            generateChapter1(), generateChapter2(), generateChapter3(),
+            generateChapter5(), generateChapter6()
         ];
     }
 };
 
 // ==========================================
 // 🧠 COMPREHENSION GENERATOR
-// Generates diverse question types
 // ==========================================
 
-export const generateComprehension = (choices) => {
+export const generateComprehension = (choices, adventureMode) => {
+    const isApprentice = adventureMode === 'apprentice';
+    const isLegend = adventureMode === 'legend';
+
     const prettify = (str) => {
         if (!str) return '';
         return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     };
+    const getVal = (key) => typeof choices[key] === 'string' ? choices[key] : (choices[key]?.label || '');
 
-    const getVal = (key) => {
-        const c = choices[key];
-        if (!c) return '';
-        if (c.type === 'text') return c.value || '';
-        if (c.type === 'drawing') return 'the hero';
-        const val = typeof c === 'string' ? c : (c.label || '');
-        return prettify(val);
-    };
+    const hero = prettify(getVal('hero'));
+    const world = prettify(getVal('world'));
+    const victory = prettify(getVal('victory'));
 
-    const hero = getVal('hero');
-    const world = getVal('world');
-    const trouble = getVal('trouble');
-    const victory = getVal('victory');
+    // BASIC QUESTIONS (For Everyone)
+    const q1 = { id: 1, type: 'mcq', question: `Who is the hero?`, options: [hero, 'A Frog', 'A Rock'].sort(() => Math.random() - 0.5), correctAnswer: hero };
+    const q2 = { id: 2, type: 'mcq', question: `Where is the story?`, options: [world, 'Mars', 'A Box'].sort(() => Math.random() - 0.5), correctAnswer: world };
+    const q3 = { id: 3, type: 'fill-blank', question: `The hero used ________ to win.`, options: [victory, 'Cheese', 'Sleep'], correctAnswer: victory };
 
-    // 1. FILL IN THE BLANK (Context)
-    const fillBlankQ = {
-        id: 1,
-        type: 'fill-blank',
-        question: `The brave ${hero} started their journey in ________.`,
-        sentence: `The brave ${hero} started their journey in ________.`,
-        options: [world, 'The Ocean', 'Space', 'The City'],
-        correctAnswer: world,
-        hint: 'Where does the story take place?'
-    };
+    if (isApprentice) {
+        return [q1, q2, q3];
+    }
 
-    // 2. SYNONYM (Vocabulary)
-    // Common words used in story: 'Ancient', 'Courageous', 'Treacherous'
-    const synonymQ = {
-        id: 2,
-        type: 'synonym',
-        question: `Which word means the SAME as "Courageous"?`,
-        targetWord: 'Courageous',
-        options: ['Brave', 'Scared', 'Sleepy', 'Weak'],
-        correctAnswer: 'Brave',
-        hint: 'Think about a hero.'
-    };
+    // ADVANCED QUESTIONS
+    const q4 = { id: 4, type: 'synonym', question: `Synonym for "Brave"?`, options: ['Courageous', 'Scared', 'Weak'], correctAnswer: 'Courageous' };
+    const q5 = { id: 5, type: 'punctuation', question: `Correct sentence?`, options: [`${hero} won!`, `${hero} won`], correctAnswer: `${hero} won!` };
 
-    // 3. ANTONYM (Vocabulary)
-    const antonymQ = {
-        id: 3,
-        type: 'antonym',
-        question: `Which word means the OPPOSITE of "Ancient"?`,
-        targetWord: 'Ancient',
-        options: ['Modern', 'Old', 'Dusty', 'Broken'],
-        correctAnswer: 'Modern',
-        hint: 'Ancient means very old.'
-    };
+    if (isLegend) {
+        const q6 = { id: 6, type: 'open-ended', question: `What would you do as the hero?`, correctAnswer: 'Any answer' };
+        return [q1, q2, q3, q4, q5, q6];
+    }
 
-    // 4. PUNCTUATION (Grammar)
-    // Identify correct sentence
-    const correctSentence = `The ${hero} saved the day!`;
-    const wrong1 = `the ${hero} saved the day`; // lowercase
-    const wrong2 = `The ${hero} saved the day`; // no punc
-    const wrong3 = `The ${hero} saved, the day?`; // bad punc
-
-    const punctuationQ = {
-        id: 4,
-        type: 'punctuation',
-        question: `Which sentence has the CORRECT punctuation?`,
-        options: [correctSentence, wrong1, wrong2, wrong3].sort(() => Math.random() - 0.5),
-        correctAnswer: correctSentence,
-        hint: 'Look for capital letters and ending marks.'
-    };
-
-    // 5. OPEN ENDED (Critical Thinking)
-    const openQ = {
-        id: 5,
-        type: 'open-ended',
-        question: `If you were the ${hero}, what would you have done differently?`,
-        correctAnswer: `(Answers will vary)`,
-        hint: 'Use your imagination!'
-    };
-
-    return [fillBlankQ, synonymQ, antonymQ, punctuationQ, openQ];
+    // Explorer gets 5
+    return [q1, q2, q3, q4, q5];
 };
