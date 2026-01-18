@@ -637,15 +637,42 @@ const QuestMapScreen = ({
   badges,
   onSelectQuest,
   onStartStory,
-  onHome
+  onHome,
+  adventure
 }) => {
   const allDone = completed.length === QUESTS.length;
+
+  const getAdventureBadge = () => {
+    switch (adventure) {
+      case 'apprentice': return { icon: '🌱', label: 'Story Apprentice' };
+      case 'explorer': return { icon: '🧭', label: 'Story Explorer' };
+      case 'legend': return { icon: '👑', label: 'Story Legend' };
+      default: return null;
+    }
+  };
+
+  const modeBadge = getAdventureBadge();
 
   return (
     <div className="screen quest-map-screen">
       <div className="map-header">
         <button className="btn-home" onClick={onHome}>🏠 Home</button>
         <h2 className="screen-title">🗺️ Quest Map</h2>
+        {modeBadge && (
+          <div className="mode-badge" style={{
+            background: 'rgba(255,255,255,0.1)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '10px',
+            border: '1px solid rgba(255,255,255,0.2)'
+          }}>
+            <span style={{ fontSize: '20px' }}>{modeBadge.icon}</span>
+            <span style={{ color: '#aaa', fontWeight: 'bold' }}>{modeBadge.label}</span>
+          </div>
+        )}
         <StoryMeter value={completed.length} max={QUESTS.length} label="Story Power" />
       </div>
 
@@ -4240,6 +4267,7 @@ export default function StoryQuestApp() {
           completed={completed}
           current={currentQuest}
           badges={badges}
+          adventure={adventure}
           onSelectQuest={handleSelectQuest}
           onStartStory={handleStartStory}
           onHome={goHome}
